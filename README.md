@@ -1,5 +1,5 @@
 # MTF_Estimator
-Robust ESF, PSF, FWHM &amp; MTF estimation from low-quality images.
+Robust ESF, PSF, FWHM &amp; MTF estimation from low-quality images and synthetic edge creation.
 
 
 ## Author's Notes
