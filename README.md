@@ -18,7 +18,7 @@ The algorithm implemented here is based on the slanted-edge sub-pixel sampling c
 
 
 <img src="figures/baotou_target.png" width="33%"/>
-<i>Baotou target</i><br/>
+<i>Baotou target</i><br/><br/>
 
 
 
