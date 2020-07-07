@@ -35,11 +35,16 @@ The algorithm will also work with simple edges.
 
 The <i>Transect</i> class represents an image row. It contains the method needed to estimate the sub-pixel position of the edge in the represented row. For robustness the class requires a minimum number of data pixels in total and around the edge to be valid (<i>__isValid</i>).
 
-The row data is first smoothed and then differentiated to obtain a coarse estimation of the pixel position of the edge. The estimation is used later to set the initial conditions of the optimization that fits a [Sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) to the data. The optimization technique used allows you to easily set a different function if you are not comfortable with the Sigmoid.
+The row data is first smoothed and then differentiated to obtain a coarse estimation of the pixel position of the edge. The estimation is used later to set the initial conditions of the optimization that fits a [Sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) to the data. The optimization technique used allows you to easily set a different function if you are not comfortable with the Sigmoid modelling the Edge Spread Function (ESF).
+
+The optimization yields the function parameters, allowing us to work in a continuous domain. From here it is trivial to obtain the function derivative (Line Spread Function, LSF) and its inflection point, which corresponds to the estimated sub-pixel position of the edge.
 
 
 <img src="figures/sigmoid_fitted_to_row.png" width="66%"/>
-<i>Sigmoid fitted to row data in a Transect</i><br/><br/>
+<i>Sigmoid fitted to row data in a Transect. The red markers shows the estimated sub-pixel edge position.</i><br/><br/>
+
+
+
 
 
 
