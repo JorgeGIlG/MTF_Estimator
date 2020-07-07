@@ -29,6 +29,17 @@ Note that the target has two dark areas with different gray levels. The algorith
 <img src="figures/baotou_explained.png" width="66%"/>
 <i>Baotou features</i><br/><br/>
 
+The algorithm will also work with simple edges.
+
+### Edge Detection
+
+The <i>Transect</i> class represents an image row. It contains the method needed to estimate the sub-pixel position of the edge in the represented row. For robustness the class requires a minimum number of data pixels in total and around the edge to be valid (<i>__isValid</i>).
+
+The row data is first smoothed and then differentiated to obtain a coarse estimation of the pixel position of the edge. The estimation is used later to set the initial conditions of the optimization that fits a [Sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function) to the data. The optimization technique used allows you to easily set a different function if you are not comfortable with the Sigmoid.
+
+
+<img src="figures/sigmoid_fitted_to_row.png" width="66%"/>
+<i>Sigmoid fitted to row data in a Transect</i><br/><br/>
 
 
 
