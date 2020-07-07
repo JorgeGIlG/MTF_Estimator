@@ -29,9 +29,9 @@ Note that the target has two dark areas with different gray levels. The algorith
 <img src="figures/baotou_explained.png" width="66%"/>
 <i>Baotou features</i><br/><br/>
 
-The algorithm will also work with simple edges.
+The algorithm will also work with simple edge images.
 
-### Edge Detection
+### First Edge Position Estimation
 
 The <i>Transect</i> class represents an image row. It contains the method needed to estimate the sub-pixel position of the edge in the represented row. For robustness the class requires a minimum number of data pixels in total and around the edge to be valid (<i>__isValid</i>).
 
@@ -49,6 +49,21 @@ The optimization yields the function parameters, allowing us to work in a contin
 When instantiated, the class scans the image row by row creating transect instances. If the edge detection is not good enough (short transect, unreliable edge data, etc.) the transects are labeled as invalid and no longer used.
 
 The method <i>refineEdgeSubPx()</i> performs a linear regression in order to check if the centers arrangement is straight as assumed. Outliers are removed during this process. The second run of this method allows the estimation of the edge angle.
+
+
+<img src="figures/edge-sub-px-position.png" width="100%"/>
+<i>Estimated sub-pixel edge locations of valid transects. The resulting line of the linear regression is shown in red</i><br/><br/>
+
+#### Definitive Edge Location
+
+Each transect has a sub-pixel edge position estimated using a function fitting. It has served its purpose and won't be used any longer. <b>The definitive sub-pixel edge position of each transect is now defined by the resulting line of the second iteration of the linear regression (<i>refineEdgeSubPx()</i>, outliers removed)</b>.
+
+
+#### LSF and PSF Estimation
+
+The sub-pixel edge position 
+
+
 
 
 
