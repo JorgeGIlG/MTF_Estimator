@@ -27,7 +27,7 @@ Note that the target has two dark areas with different gray levels. The algorith
 
 
 <img src="figures/baotou_explained.png" width="66%"/>
-<i>Baotou features</i><br/>
+<i>Baotou features</i><br/><br/>
 
 
 
