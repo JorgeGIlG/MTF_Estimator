@@ -4,10 +4,13 @@ Robust ESF, PSF, FWHM &amp; MTF estimation from low-quality images.
 
 ## Author's Notes
 
-Estimating the MTF becomes difficult when the image is far from ideal, something that often happens with satellite data. I came up with the idea of using piecewise polynomials and optimization techniques to build a robust MTF estimator that doesn't rely on a given function and, being mostly numerical, is also realistic.
+Estimating the MTF becomes difficult when the image is far from ideal, something that often happens with satellite data. I came up with the idea of using piecewise polynomials and optimization techniques to build a robust MTF estimator that doesn't rely on a given function and, being mostly numerical, is also more realistic.
 
-Implementing this algorithm using Python and its numeric and scientific packages was a funny exercise. Suprisingly, it works pretty fine. I think it is robust, as expected, but it is also accurate. I validated it against third-party software. So it is maybe somewhat valuable, for this reason I've decided to open-source it using a GPLv3.0 license.
+Implementing this algorithm using Python and its numeric and scientific packages was a funny exercise. Suprisingly, it works pretty fine. I think it is robust, as expected, but it is also accurate. I validated it against third-party software. So it is maybe somewhat valuable. For this reason I've decided to open-source it using a GPLv3.0 license.
 
+## Usage
+
+There is a lot of room for usability improvement. The impatient, please see the code. The rest, please read the following doc and then read the code.
 
 
 ## Introduction
@@ -112,13 +115,4 @@ This class is intended for validation purposes. You can use it to create perfect
 ## Validation
 
 The algorithm and its implementation has been validated using synthetic edges and actual edges using third-party software.
-
-
-
-
-
-
-
-
-
 
