@@ -15,8 +15,11 @@ The <i>Slanted-Edge</i> methodology is an astute way of doing this. It uses a ti
 
 The algorithm implemented here is based on the slanted-edge sub-pixel sampling concept. I will describe it step by step following a real world example: An image acquired by an Earth-observation satellite on the <a href="https://calval.cr.usgs.gov/apps/baotou-comprehensive-calibration-and-validation-site">Baotou Comprehensive Calibration and Validation Site</a>.
 
+
+
 <img src="figures/baotou_target.png" width="33%"/>
-_Baotou target_<br/>
+<br/><i>Baotou target</i><br/>
+
 
 
 Currently the algorithm requires the pixels outside the target to be set to zero.
