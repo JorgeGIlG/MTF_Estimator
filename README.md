@@ -18,7 +18,7 @@ The algorithm implemented here is based on the slanted-edge sub-pixel sampling c
 
 
 <img src="figures/baotou_target.png" width="33%"/>
-<br/><i>Baotou target</i><br/>
+<i>Baotou target</i><br/>
 
 
 
@@ -27,7 +27,7 @@ Note that the target has two dark areas with different gray levels. The algorith
 
 
 <img src="figures/baotou_explained.png" width="66%"/>
-*Baotou features*<br/>
+<i>Baotou features</i><br/>
 
 
 
