@@ -1,6 +1,15 @@
 # MTF_Estimator
 Robust ESF, PSF, FWHM &amp; MTF estimation from low-quality images.
 
+
+## Author's Notes
+
+Estimating the MTF becomes difficult when the image is far from ideal, something that often happens with satellite data. I came up with the idea of using piecewise polynomials and optimization techniques to build a robust MTF estimator that doesn't rely on a given function and, being mostly numerical, is also realistic.
+
+Implementing this algorithm using Python and its numeric and scientific packages was a funny exercise. Suprisingly, it works pretty fine. I think it is robust, as expected, but it is also accurate. I validated it against third-party software. So it is maybe somewhat valuable, for this reason I've decided to open-source it using a GPLv3.0 license.
+
+
+
 ## Introduction
 
 The Modulation Transfer Function (MTF) of an optical system represents the spatial frequency performance of such system. Its behaviour is directly related to the concepts of <i>sharpness, contrast</i> and <i>spatial resolution</i>. For this reason it is an important quality indicator, hence the need of an estimation method.
@@ -75,7 +84,34 @@ Brown: Best-fit Gaussian resulting from the optimization
 </i><br/><br/>
 
 
+### MTF Estimation
 
+The MTF is now straightforward to calculate using the real and discrete fast Fourier transform implemented in the NumPy package.
+
+The results are provided through a Matplotlib interactive widget with additional information on the console.
+
+<img src="figures/out_gui.png" width="100%"/>
+<i>Matplotlib output example</i><br/><br/>
+ 
+
+<img src="figures/out_console.png"/>
+<i>Console output example</i><br/><br/>
+
+
+
+
+## The Edge Class
+
+This class is intended for validation purposes. You can use it to create perfect synthetic edges for performance comparison with third-party software.
+
+<img src="figures/synthetic-edge-sample.png"/>
+<i>Synthetic edge sample</i><br/><br/>
+
+
+
+## Validation
+
+The algorithm and its implementation has been validated using synthetic edges and actual edges using third-party software.
 
 
 
