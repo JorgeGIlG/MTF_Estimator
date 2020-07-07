@@ -6,7 +6,7 @@ Robust ESF, PSF, FWHM &amp; MTF estimation from low-quality images.
 
 Estimating the MTF becomes difficult when the image is far from ideal, something that often happens with satellite data. I came up with the idea of using piecewise polynomials and optimization techniques to build a robust MTF estimator that doesn't rely on a given function and, being mostly numerical, is also more empiric.
 
-Implementing this algorithm using Python and its numeric and scientific packages was a funny exercise. Suprisingly, it works pretty fine. I think it is robust, as expected, but it is also accurate. I validated it against third-party software. So it is maybe somewhat valuable. For this reason I've decided to open-source it using a GPLv3.0 license.
+Implementing this algorithm using Python and its numeric and scientific packages was a funny exercise. Surprisingly, it works pretty fine. I think it is robust, as expected, but it is also accurate. I validated it against third-party software. So it is maybe somewhat valuable. For this reason I've decided to open-source it using a GPLv3.0 license.
 
 ## Usage
 
@@ -18,7 +18,7 @@ There is a lot of room for usability improvement. The impatient, please see the 
 The Modulation Transfer Function (MTF) of an optical system represents the spatial frequency performance of such system. Its behaviour is directly related to the concepts of <i>sharpness, contrast</i> and <i>spatial resolution</i>. For this reason it is an important quality indicator, hence the need of an estimation method.
 The MTF can be inferred from the optical system design but, unfortunately, in the real world only its modulus can be empirically determined or measured from the actual system.
 
-One way to perform the estimation is to use actual images produced by the system. For example, the [ISO 12233](https://www.iso.org/standard/71696.html) provides an estimation standard focused on still picture cameras using [test charts](https://www.imatest.com/solutions/iso-12233/) or standarized targets. There are multiple ways of estimating the MTF using images, all of them based on the same idea: Extracting spatial frequency performance information beyond the discrete values that the image directly provides.
+One way to perform the estimation is to use actual images produced by the system. For example, the [ISO 12233](https://www.iso.org/standard/71696.html) provides an estimation standard focused on still picture cameras using [test charts](https://www.imatest.com/solutions/iso-12233/) or standardized targets. There are multiple ways of estimating the MTF using images, all of them based on the same idea: Extracting spatial frequency performance information beyond the discrete values that the image directly provides.
 
 The <i>Slanted-Edge</i> methodology is an astute way of doing this. It uses a tilted knife-edge image and assumes that the transition between the two zones is straight and sharp in the object space. Under these assumptions it is then possible to estimate the sub-pixel position of the edge. Due to the knife-edge inclination it is then feasible to map multiple sub-pixel estimates that can be used to build a statistically robust model of the edge in the image space. This edge model can be immediately converted into a Point Spread Function (PSF) from which the MTF can be estimated.
 
