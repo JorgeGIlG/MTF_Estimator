@@ -31,6 +31,7 @@ Note that the target has two dark areas with different gray levels. The algorith
 
 The algorithm will also work with simple edge images.
 
+
 ### First Edge Position Estimation
 
 The <i>Transect</i> class represents an image row. It contains the method needed to estimate the sub-pixel position of the edge in the represented row. For robustness the class requires a minimum number of data pixels in total and around the edge to be valid (<i>__isValid</i>).
@@ -44,6 +45,7 @@ The optimization yields the function parameters, allowing us to work in a contin
 <i>Sigmoid fitted to row data in a specific Transect. The red marker shows the estimated sub-pixel edge position. Circles are pixel values.</i><br/><br/>
 
 
+
 ### The MTF Class
 
 When instantiated, the class scans the image row by row creating transect instances. If the edge detection is not good enough (short transect, unreliable edge data, etc.) the transects are labeled as invalid and no longer used.
@@ -54,14 +56,25 @@ The method <i>refineEdgeSubPx()</i> performs a linear regression in order to che
 <img src="figures/edge-sub-px-position.png" width="100%"/>
 <i>Estimated sub-pixel edge locations of valid transects. The resulting line of the linear regression is shown in red</i><br/><br/>
 
+
 #### Definitive Edge Location
 
 Each transect has a sub-pixel edge position estimated using a function fitting. It has served its purpose and won't be used any longer. <b>The definitive sub-pixel edge position of each transect is now defined by the resulting line of the second iteration of the linear regression (<i>refineEdgeSubPx()</i>, outliers removed)</b>.
 
 
-#### LSF and PSF Estimation
 
-The sub-pixel edge position 
+#### ESF and PSF Estimation
+
+The sub-pixel edge position is used to shift each transect to a common origin, hence creating a supersampled virtual edge. This way, instead of using the Sigmoid or other function, <b>the edge is modelled as a spline</b>, creating a numeric and more realistic representation of the ESF. <b>The PSF is obtained by fitting the spline shape to a Gaussian function using a Levenberg-Marquardt optimization</b>(<i>calcOptimizedLsf</i>).
+
+<img src="figures/supersampled_edge.png" width="100%"/>
+<i>Green: Supersampled edge<br/>
+Red: Optimized ESF spline numeric model<br/>
+Blue: Optimized PSF spline numeric model<br/>
+Brown: Best-fit Gaussian resulting from the optimization
+</i><br/><br/>
+
+
 
 
 
