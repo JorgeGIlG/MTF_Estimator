@@ -10,4 +10,9 @@ C:\Users\jrgg\AppData\Roaming\QGIS\QGIS3\profiles\default\processing\scripts
 C:\Users\jrgg\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins
 
 
+C:\Users\jrgg\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\DataPlotly\__pycache__
+
+
+
+
 
