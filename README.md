@@ -14,7 +14,7 @@ To improve its usability I've integrated the algorithm in a QGIS Plugin. In orde
 
 Download the plugin package [mtf_estimator_1.0.zip](qgis_plugin/mtf_estimator_1.0.zip). Use <i>Plugins -> Manage and Install Plugins -> Install from ZIP</i> to install the package.
 Once installed, the <i>MTF Estimator</i> option will be available in the <i>Plugins</i> menu.
- 
+
 ### Usage
 
 * Load the study image <br/>
@@ -43,6 +43,8 @@ The results window has its own toolbar containing pan, zoom, and save tools. Add
 * The edge must be straight and sharp. A man-made target is more likely to have these features.
 * The high and low reflectance surfaces near the edges must be uniform.
 * Remember that the algorithm works with vertical edges. Its angle is important. If you need estimations <i>along</i> just transpose (or rotate) the image.
+
+<img src='figures/mtf_estimator_plugin_demo.gif' width='100%'>
 
 ### Contributing and Bug Reporting
 
