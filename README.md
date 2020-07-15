@@ -1,15 +1,26 @@
 # MTF Estimator
 Robust ESF, PSF, FWHM &amp; MTF estimation from low-quality images and synthetic edge creation.
 
-Please read the [algorithm description](Algorithm_Description.md).
+It is recommendable to read the [algorithm description](Algorithm_Description.md) first.
 
 ## QGIS Plugin
 
 To improve its usability I've integrated the algorithm in a QGIS Plugin. In order to use it you will need QGIS 3.10 or higher.
 
-# Installation
+### Installation
 
-Download the plugin package [mtf_estimator_1.0.zip](qgis_plugin/mtf_estimator_1.0.zip)
+Download the plugin package [mtf_estimator_1.0.zip](qgis_plugin/mtf_estimator_1.0.zip). Use <i>Plugins -> Manage and Install Plugins -> Install from ZIP</i> to install the package.
+Once installed, the <i>MTF Estimator</i> option will be available in the <i>Plugins</i> menu.
+ 
+### Usage
+
+* Load the study image
+Remote rasters (WMS, Tile Server) are not supported
+Check that the image is projected to a regular grid or has no geolocation information at all. Geolocation based on RPCs or GCPs is not supported. If your image is geolocated this way a workaround is just to remove the geolocation metadata
+
+* Load or create a vector layer containing the polygon that defines the area of interest
+* Open <i>MTF Estimator</i> from the <i>Plugins</i> menu
+* Select 
 
 
 Estimating the MTF becomes difficult when the image is far from ideal, something that often happens with satellite data. I came up with the idea of using piecewise polynomials and optimization techniques to build a robust MTF estimator that doesn't rely on a given function and, being mostly numerical, is also more empiric.
