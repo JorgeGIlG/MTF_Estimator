@@ -1,0 +1,48 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=MTF Estimator
+qgisMinimumVersion=3.10
+description=Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation.
+version=1.0
+author=Jorge Gil
+email=jorge.gil@tutanota.de
+
+about=The algorithm implemented here is based on the slanted-edge sub-pixel sampling concept. It uses a tilted knife-edge image to fit a numeric model to estimate a PSF from which the MTF is obtained.
+
+tracker=https://github.com/JorgeGIlG/MTF_Estimator/issues
+repository=https://github.com/JorgeGIlG/MTF_Estimator/qgis_plugin
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=python, analysis, psf, mtf, esf, edge
+
+homepage=https://github.com/JorgeGIlG/MTF_Estimator
+category=Plugins
+icon=icon.png
+# experimental flag
+# experimental=True
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+Category of the plugin: Raster, Vector, Database or Web
+# category=
+
+# If the plugin can run on QGIS Server.
+server=False
+
