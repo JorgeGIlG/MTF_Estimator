@@ -14,23 +14,23 @@ Once installed, the <i>MTF Estimator</i> option will be available in the <i>Plug
  
 ### Usage
 
-* Load the study image <br/><br/>
+* Load the study image <br/>
 Remote rasters (WMS, Tile Server) are not supported<br/>
-Check that the image is projected to a regular grid or has no geolocation information at all. Geolocation based on RPCs or GCPs is not supported. If your image is geolocated this way, a workaround is just to remove the geolocation metadata.<br/><br/>
+Check that the image is projected to a regular grid or has no geolocation information at all. Geolocation based on RPCs or GCPs is not supported. If your image is geolocated this way, a workaround is just to remove the geolocation metadata.<br/>
 
-* Load or create a vector layer containing the polygon that defines the area of interest. Once drawn don't forget to save it<br/><br/>
+* Load or create a vector layer containing the polygon that defines the area of interest. Once drawn don't forget to save it<br/>
 
-* Open <i>MTF Estimator</i> from the <i>Plugins</i> menu<br/><br/>
+* Open <i>MTF Estimator</i> from the <i>Plugins</i> menu<br/>
 
-* Select the study image and band<br/><br/>
+* Select the study image and band<br/>
 
-* Select vector layer<br/><br/>
+* Select vector layer<br/>
 
-* Run the algorithm<br/><br/>
+* Run the algorithm<br/>
 Be patient. During the time that the task requires the dialog window will be unresponsive. This is definetely something to improve for future versions.</br>
-Once the process is completed a log will be shown. If there was enough data with sufficient quality a results window will appear.</br></br>
+Once the process is completed a log will be shown. If there was enough data with sufficient quality a results window will appear.</br>
 
-* Examine the outputs<br/><br/>
+* Examine the outputs<br/>
 The results window has its own toolbar containing pan, zoom, and save tools. Additonal data can be found in the log window.
 
 
