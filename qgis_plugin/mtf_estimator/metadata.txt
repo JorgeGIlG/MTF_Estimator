@@ -4,9 +4,9 @@
 
 [general]
 name=MTF Estimator
-qgisMinimumVersion=3.0
+qgisMinimumVersion=3.10
 description=Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation.
-version=0.1
+version=1.0
 author=Jorge Gil
 email=jorge.gil@tutanota.de
 
@@ -29,7 +29,8 @@ homepage=https://github.com/JorgeGIlG/MTF_Estimator
 category=Plugins
 icon=icon.png
 # experimental flag
-experimental=True
+# experimental=True
+experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False

@@ -194,6 +194,7 @@ class Transect:
     
     def getRefinedData(self):
         if not self.__IsValid:
+            plt.close()
             raise Exception("Invalid transects")
         
         a, b, l, s = self.__SigmoidParams
@@ -320,6 +321,7 @@ class Mtf:
                 t.EdgeSubPx = a + b*t.Row
         
         if len(self.Transects) < 5:
+            plt.close()
             raise Exception("Not enough transects")
         
         if self.__RefineEdgeSubPxStep == 2:

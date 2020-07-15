@@ -145,9 +145,7 @@ class MtfEstimator:
             added to self.actions list.
         :rtype: QAction
         """
-        
-        #icon_path = '/plugins/mtf_estimator/icon.png'
-        
+                        
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
         action.triggered.connect(callback)
@@ -194,12 +192,6 @@ class MtfEstimator:
                 action)
             self.iface.removeToolBarIcon(action)
 
-               
-                                 
-                                                        
-                                                        
-                                           
-       
         
     def console(self, *message):
         message = [str(i) for i in message]
@@ -211,19 +203,11 @@ class MtfEstimator:
         
         
     def run_mtf_algo(self):
-        self.dlg.runButton.setEnabled(False)
-        self.console("__START__")        
-                                                                                                                                               
-                                                   
-        
-        raster_layer = self.dlg.mMapRasterLayerComboBox.currentLayer()        
-                                                       
+        #self.dlg.runButton.setEnabled(False)
+        self.console("__START__")
+        raster_layer = self.dlg.mMapRasterLayerComboBox.currentLayer()
         band_n = self.dlg.mRasterBandComboBox.currentBand()
-      
-        self.console(raster_layer.source())
-
-                             
-                          
+                
         gdal_layer = gdal.Open(raster_layer.source(), gdal.GA_ReadOnly)
         gt = list(gdal_layer.GetGeoTransform())
         xsize = gdal_layer.RasterXSize
@@ -231,21 +215,33 @@ class MtfEstimator:
         band = gdal_layer.GetRasterBand(band_n)
         raster_srs = osr.SpatialReference()
         raster_srs.ImportFromWkt(gdal_layer.GetProjection())
-        
-        
-                                            
-        vlayer = self.dlg.mMapVectorLayerComboBox.currentLayer()        
-                                                                
-                                                     
-                                                        
-                                   
-                                                                                        
-                                                                              
-                
+        vlayer = self.dlg.mMapVectorLayerComboBox.currentLayer()      
+        vector_srs = osr.SpatialReference()
+        vector_srs.ImportFromWkt(vlayer.crs().toWkt())
+
+        # OJO!!!!
+        # https://gdal.org/tutorials/osr_api_tut.html#crs-and-axis-order
+        import osgeo
+        if int(osgeo.__version__[0]) >= 3:
+            # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
+            raster_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+            vector_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+
         if str(raster_srs) is '':
-            self.console('WARNING: Raster with no CRS')            
+            coord_transform = None
+            self.console('WARNING: Raster with no CRS')    
             gt[5] = -1*gt[5]
-            self.console(gt)
+        else:            
+            coord_transform = osr.CoordinateTransformation(vector_srs, raster_srs)
+
+        
+        self.console(vector_srs.GetName())
+        self.console("")
+        self.console(raster_srs.GetName())
+        self.console("")
+        self.console(coord_transform)
+        
+        
         
         memlayer_drv = ogr.GetDriverByName('Memory')
         memlayer_ds = memlayer_drv.CreateDataSource('')
@@ -253,219 +249,87 @@ class MtfEstimator:
         memlayer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
         featureDefn = memlayer.GetLayerDefn()
         
-        for qgs_feature in vlayer.getFeatures():            
-                                   
-                                                  
+        
+        for qgs_feature in vlayer.getFeatures():
             featureDefn = memlayer.GetLayerDefn()
             memfeat = ogr.Feature(featureDefn)
             geom = qgs_feature.geometry()
+            self.console(geom.asWkt())
             geom = geom.asWkb()
             geom = ogr.CreateGeometryFromWkb(geom)
+            if not coord_transform is None:
+                geom.Transform(coord_transform)
+            self.console(geom)
+            
             memfeat.SetGeometry(geom)
-            memlayer.CreateFeature(memfeat)        
-        
-           
-                             
-                                     
-                             
-                        
-                       
-                       
-                             
-                                 
-                                              
-                                              
-                                       
-                                       
-                                       
-                                       
+            memlayer.CreateFeature(memfeat)
+            
 
-                        
-                                             
-                                             
-                                             
-                                             
-                               
-                                     
-                               
-                                     
-           
-
-        
         # Get extent in raster coords
-        extent = memlayer.GetExtent()
-        gt_matrix =  np.append(np.array(gt),[1,0,0])        
-        inv_gt = np.linalg.inv(np.reshape(gt_matrix, [3,3])) 
+        e = np.array(memlayer.GetExtent()).copy()
+        e = np.reshape(e, [2,2])
+        e = np.array(np.meshgrid(e[0], e[1]))
+        E = e.T.reshape(-1, 2)
+        m = np.reshape(np.array(gt).copy(),[2,3])
+        A = m[:,0]
+        m = m[:,1:]
+        M = np.linalg.inv(m)
+        col_list, row_list = np.matmul(M,(E-A).T)
         pxoffset = 5
-        col_list = []
-        row_list = []
-        for i in range(0,2):
-            for j in range(2,4):
-                x = extent[i]
-                y = extent[j]               
-                v = np.array([[x,y,1]]).T
-                ic = np.matmul(inv_gt, v)
-                col_list.append(ic[1])    
-                row_list.append(ic[2])
         col_min = np.int(np.max([np.floor(np.min(col_list)) - pxoffset,1]))
         col_max = np.int(np.min([np.ceil(np.max(col_list))+pxoffset, xsize-1]))
         row_min = np.int(np.max([np.floor(np.min(row_list)) - pxoffset,1]))
         row_max = np.int(np.min([np.ceil(np.max(row_list))+pxoffset, ysize-1]))
-       
-                                                        
-        
-           
-                                                   
-                                                                            
-                                                           
-                                                        
-                                     
-                                                    
-                                                                 
-                                                    
-                                                                      
-                                                      
-                                                                     
-                   
-           
-
         sub_gt = gt
         sub_gt[0] = gt[0] + gt[1]*col_min + gt[2]*row_min
         sub_gt[3] = gt[3] + gt[4]*col_min + gt[5]*row_min
         sub_xsize = col_max-col_min
-        sub_ysize = row_max-row_min
+        sub_ysize = row_max-row_min        
+        
         memraster_drv = gdal.GetDriverByName('MEM')
         memraster = memraster_drv.Create('', sub_xsize, sub_ysize, 1, band.DataType)
+        
         memraster.SetProjection(gdal_layer.GetProjection())
         memraster.SetGeoTransform(sub_gt)
         memband = memraster.GetRasterBand(1)                
         memband.WriteArray(np.zeros([sub_ysize, sub_xsize]))
         gdal.RasterizeLayer(memraster, [1], memlayer, burn_values=[1])
-        mask = memband.ReadAsArray(0, 0, sub_xsize, sub_ysize)
+        mask = memband.ReadAsArray(0, 0, sub_xsize, sub_ysize)                
         memband.WriteArray(mask*band.ReadAsArray(col_min, row_min, sub_xsize, sub_ysize))
         mask = None
-        
-        self.console("Running...")
         
         try:            
             mtf = Mtf(memraster, logfunc=self.console)
         except Exception:
-            self.console(Exception)
-            self.console("__ERROR__")            
+            #self.console(Exception)
+            self.console("*** Unable to estimate ***")            
+            self.console("__END__")
         else:           
             self.console("__END__")
-                                                     
-                                
-                              
-                                         
-                                                                                                
-                                             
-                                                                                   
-                                                                     
-           
-        
-        self.dlg.runButton.setEnabled(True)
-                                                  
-                                   
-                                         
-                                                             
-                                                                                            
-                                                      
-                                    
-                                     
-                                          
-                                
-           
-        
-           
-                                       
-                        
-                                                             
-                               
-                  
-           
-        
-                                                                                                                                               
-                             
-                                                  
-        
-                                      
-                                                                 
-                                                     
-        
-                               
-        
-           
-                                                                         
-                        
-                                  
-                                 
-                                         
-                                               
-                                                               
-           
+            
+        #self.dlg.runButton.setEnabled(True)    
 
     def set_band(self):
         self.dlg.mRasterBandComboBox.setLayer(self.dlg.mMapRasterLayerComboBox.currentLayer())
-        
+    
+    def show_help(self):
+        from PyQt5.QtCore import QUrl
+        from PyQt5.QtGui import QDesktopServices
+        QDesktopServices.openUrl(QUrl('https://github.com/JorgeGIlG/MTF_Estimator'))
 
     def run(self):
-                                                        
-
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = MtfEstimatorDialog()            
-                                                                         
+            self.dlg = MtfEstimatorDialog()                                                                         
             self.dlg.closeButton.clicked.connect(self.finish)
             self.dlg.runButton.clicked.connect(self.run_mtf_algo)
+            self.dlg.helpButton.clicked.connect(self.show_help)
             self.dlg.mMapRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
             self.dlg.mMapRasterLayerComboBox.layerChanged.connect(self.set_band)
             self.set_band()
             self.dlg.mMapVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
-            
-            
-
-                                           
-                                                                  
-                                                               
-                                         
-                                                                   
-                                  
-                                                                              
-                          
-                                                       
-                                                            
-
-
-        
-        
-                                                                           
-        
-        
-
         # show the dialog
         self.dlg.show()
-                                   
-                                   
-        
-                               
-           
-                  
-                                                                            
-                                        
-                                                
-                                                     
-                                               
-                
-           
-
-
-
-
-
-
-
-
 
