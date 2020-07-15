@@ -30,11 +30,11 @@ Check that the image is projected to a regular grid or has no geolocation inform
 * Select vector layer<br/>
 
 * Run the algorithm<br/>
-Be patient. During the time that the task requires the dialog window will be unresponsive. This is definetely something to improve for future versions.</br>
+It may take some time. During the time that the task requires the dialog window will be unresponsive. This is definitely something to improve for future versions.</br>
 Once the process is completed a log will be shown. If there was enough data with sufficient quality a results window will appear.</br>
 
 * Examine the outputs<br/>
-The results window has its own toolbar containing pan, zoom, and save tools. Additonal data can be found in the log window.
+The results window has its own toolbar containing pan, zoom, and save tools. Additional data can be found in the log window.
 
 
 ### Obtaining Successful Results
