@@ -7,6 +7,9 @@ It is recommendable to read the [algorithm description](Algorithm_Description.md
 
 To improve its usability I've integrated the algorithm in a QGIS Plugin. In order to use it you will need QGIS 3.10 or higher.
 
+<img src='figures/qgis_plugin_overview.png' width='100%'/>
+
+
 ### Installation
 
 Download the plugin package [mtf_estimator_1.0.zip](qgis_plugin/mtf_estimator_1.0.zip). Use <i>Plugins -> Manage and Install Plugins -> Install from ZIP</i> to install the package.
@@ -40,6 +43,18 @@ The results window has its own toolbar containing pan, zoom, and save tools. Add
 * The edge must be straight and sharp. A man-made target is more likely to have these features.
 * The high and low reflectance surfaces near the edges must be uniform.
 * Remember that the algorithm works with vertical edges. Its angle is important. If you need estimations <i>along</i> just transpose (or rotate) the image.
+
+### Contributing and Bug Reporting
+
+* If you wish to contribute patches you can fork the project, make your changes, commit to your repository, and then create a pull request.</br>
+* You can report bugs as [issues](issues)
+
+
+### Contact
+
+Contact me on (Linkedin)[https://es.linkedin.com/in/jorge-gil-10453069]
+
+
 
 
 
