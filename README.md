@@ -49,7 +49,7 @@ The results window has its own toolbar containing pan, zoom, and save tools. Add
 ### Contributing and Bug Reporting
 
 * If you wish to contribute patches you can fork the project, make your changes, commit to your repository, and then create a pull request.</br>
-* You can report bugs as [issues](issues)
+* You can report bugs as [issues](https://github.com/JorgeGIlG/MTF_Estimator/issues)
 
 
 ### Contact
