@@ -52,7 +52,7 @@ The results window has its own toolbar containing pan, zoom, and save tools. Add
 
 ### Contact
 
-Contact me on (Linkedin)[https://es.linkedin.com/in/jorge-gil-10453069]
+Contact me on [Linkedin](https://es.linkedin.com/in/jorge-gil-10453069)
 
 
 
