@@ -13,7 +13,8 @@ email=jorge.gil@tutanota.de
 about=The algorithm implemented here is based on the slanted-edge sub-pixel sampling concept. It uses a tilted knife-edge image to fit a numeric model to estimate a PSF from which the MTF is obtained.
 
 tracker=https://github.com/JorgeGIlG/MTF_Estimator/issues
-repository=https://github.com/JorgeGIlG/MTF_Estimator/qgis_plugin
+repository=https://github.com/JorgeGIlG/MTF_Estimator/tree/master/qgis_plugin/mtf_estimator
+
 # End of mandatory metadata
 
 # Recommended items:
