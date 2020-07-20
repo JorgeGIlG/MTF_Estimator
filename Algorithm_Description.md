@@ -112,3 +112,11 @@ This class is intended for validation purposes. You can use it to create perfect
 
 The algorithm and its implementation has been validated using synthetic edges and actual edges using third-party software.
 
+## Installing and Using as a QGIS Plugin
+
+Check the [instructions](README.md).
+
+
+
+
+
