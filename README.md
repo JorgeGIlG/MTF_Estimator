@@ -12,7 +12,7 @@ To improve its usability I've integrated the algorithm in a QGIS Plugin. In orde
 
 ### Installation
 
-Download the plugin package [mtf_estimator_1.0.zip](qgis_plugin/mtf_estimator_1.0.zip). Use <i>Plugins -> Manage and Install Plugins -> Install from ZIP</i> to install the package.
+You can use the [QGIS Plugin Manager](https://docs.qgis.org/3.10/en/docs/training_manual/qgis_plugins/fetching_plugins.html). Use <i>Plugins -> Manage and Install Plugins -> All</i> to search and install install the package.<br/>
 Once installed, the <i>MTF Estimator</i> option will be available in the <i>Plugins</i> menu.
 
 ### Usage
