@@ -77,15 +77,15 @@ The sub-pixel edge position is used to shift each transect to a common origin, h
 
 <img src="figures/supersampled_edge.png" width="100%"/>
 <i>Green: Supersampled edge<br/>
+Brown: Best-fit Gaussian resulting from the optimization
 Red: Optimized ESF spline numeric model<br/>
 Blue: Optimized PSF spline numeric model<br/>
-Brown: Best-fit Gaussian resulting from the optimization
 </i><br/><br/>
 
 
 ### MTF Estimation
 
-The MTF is now straightforward to calculate using the real and discrete fast Fourier transform implemented in the NumPy package.
+The MTF is now straightforward to calculate from the optimized PSF numeric model using the real and discrete fast Fourier transform implemented in the NumPy package.
 
 The results are provided through a Matplotlib interactive widget with additional information on the console.
 
