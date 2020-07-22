@@ -77,9 +77,9 @@ The sub-pixel edge position is used to shift each transect to a common origin, h
 
 <img src="figures/supersampled_edge.png" width="100%"/>
 <i>Green: Supersampled edge<br/>
-Brown: Best-fit Gaussian resulting from the optimization
+Brown: Best-fit Gaussian resulting from the optimization<br/>
 Red: Optimized ESF spline numeric model<br/>
-Blue: Optimized PSF spline numeric model<br/>
+Blue: Optimized PSF spline numeric model
 </i><br/><br/>
 
 
