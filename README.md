@@ -1,4 +1,4 @@
-# MTF Estimator
+# FidMTF MTF Estimator
 Robust ESF, PSF, FWHM &amp; MTF estimation from low-quality images and synthetic edge creation.
 
 It is recommendable to read the [algorithm description](Algorithm_Description.md) first.
