@@ -1,9 +1,9 @@
 theme: jekyll-theme-slate
 
-title: FidMTF: MTF Estimator
-
 plugins:
   - jekyll-seo-tag
 
 google_site_verification: SjSpiqoyvSfV8_jcgBrXxZKjbbx0D5nTcj62fki_vNs
+
+title: FidMTF: MTF Estimator
 
