@@ -1,4 +1,4 @@
-# MTF Estimator
+# FidMTF MTF Estimator
 Robust ESF, PSF, FWHM &amp; MTF estimation from low-quality images and synthetic edge creation.
 
 It is recommendable to read the [algorithm description](Algorithm_Description.md) first.
@@ -48,7 +48,7 @@ The results window has its own toolbar containing pan, zoom, and save tools. Add
 
 ### Contributing and Bug Reporting
 
-* If you wish to contribute patches you can fork the project, make your changes, commit to your repository, and then create a pull request.</br>
+* If you wish to contribute patches you can fork the project, make your changes, commit to your repository, and then create a pull request.<br/>
 * You can report bugs as [issues](https://github.com/JorgeGIlG/MTF_Estimator/issues)
 
 

@@ -1,2 +1,7 @@
-theme: jekyll-theme-cayman
-google_analytics: UA-173532996-2
+theme: jekyll-theme-slate
+
+plugins:
+  - jekyll-seo-tag
+
+google_site_verification: SjSpiqoyvSfV8_jcgBrXxZKjbbx0D5nTcj62fki_vNs
+
