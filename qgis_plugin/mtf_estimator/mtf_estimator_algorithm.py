@@ -297,7 +297,7 @@ class Mtf:
         
         self.console("Refined subpx edge pos. Coefficient of correlation: ", r**2)
         
-        diff = y - a + b*x
+        diff = y - (a + b*x)
         #avg = np.average(diff)
         std = np.std(diff)
         
@@ -306,7 +306,7 @@ class Mtf:
         if self.__RefineEdgeSubPxStep == 0: # Remove outliers
             transects = list()            
             for t in self.Transects:
-                if np.abs(a + b*t.Row - t.EdgeSubPx) > 0.1*std:
+                if np.abs(a + b*t.Row - t.EdgeSubPx) > 1.75*std:
                     self.console("Removed outlier", t.Row)
                     t.invalidate()
                 else:
