@@ -370,7 +370,15 @@ class Mtf:
             lsfRep = interpolate.splrep(x, y, k=3, s=smooth)        
             psfSpline = interpolate.splev(xAux, lsfRep, der=1)            
             return np.sum(np.abs(psfSpline - gaussianFunc(xAux, ga, gb, gc, gw)))
-
+            
+        def fwhm_from_lsf(x, y): # Instead of of the Gaussian model
+            c = np.where(y == np.max(y))[0][0] # x value for maximum, center
+            y = np.abs(y - np.max(y)/2.)
+            left = np.where(y[:c] == np.min(y[:c]))
+            right = np.where(y[c:] == np.min(y[c:])) + c
+            left = x[left[0][0]]
+            right = x[right[0][0]]
+            return right - left
         
         x = esfData[0]
         y = esfData[1]                
