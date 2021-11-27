@@ -22,11 +22,21 @@
  ***************************************************************************/
 """
 
-
+try:
+    from osgeo import gdal
+except ImportError:
+    import gdal
+try:
+    from osgeo import ogr
+except ImportError:
+    import ogr
+try:
+    from osgeo import osr
+except ImportError:
+    import osr
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from PyQt5.QtWidgets import QAction, QPlainTextEdit
 from .mtf_estimator_algorithm import Mtf, Transect, sigmoid
-import gdal, ogr, osr
 import numpy as np
 # Initialize Qt resources from file resources.py
 from .resources import *
