@@ -61,7 +61,7 @@ class Edge:
         superGaussian = superGaussian/np.sum(superGaussian)
         
         driver = gdal.GetDriverByName("GTiff")
-        dst_ds = driver.Create(self.EdgeFileName, self.Cols, self.Rows, 1, gdal.GDT_UInt16)
+        dst_ds = driver.Create(self.EdgeFileName, int(self.Cols), int(self.Rows), 1, gdal.GDT_UInt16)
         band = dst_ds.GetRasterBand(1)
         
         
