@@ -286,10 +286,10 @@ class MtfEstimator:
         M = np.linalg.inv(m)
         col_list, row_list = np.matmul(M,(E-A).T)
         pxoffset = 5
-        col_min = np.int(np.max([np.floor(np.min(col_list)) - pxoffset,1]))
-        col_max = np.int(np.min([np.ceil(np.max(col_list))+pxoffset, xsize-1]))
-        row_min = np.int(np.max([np.floor(np.min(row_list)) - pxoffset,1]))
-        row_max = np.int(np.min([np.ceil(np.max(row_list))+pxoffset, ysize-1]))
+        col_min = np.int64(np.max([np.floor(np.min(col_list)) - pxoffset,1]))
+        col_max = np.int64(np.min([np.ceil(np.max(col_list))+pxoffset, xsize-1]))
+        row_min = np.int64(np.max([np.floor(np.min(row_list)) - pxoffset,1]))
+        row_max = np.int64(np.min([np.ceil(np.max(row_list))+pxoffset, ysize-1]))
         sub_gt = gt
         sub_gt[0] = gt[0] + gt[1]*col_min + gt[2]*row_min
         sub_gt[3] = gt[3] + gt[4]*col_min + gt[5]*row_min

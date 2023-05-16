@@ -66,14 +66,14 @@ class Edge:
         
         for row in range(0, self.Rows):            
             
-            superEdgePos = np.int(\
+            superEdgePos = np.int64(\
                            np.round(\
                                 scols//2 + 0.5*self.SuperSampFactor*(2*row-self.Rows)/np.tan(angle)\
                            ))
             
             superEdge = np.ones([scols+2*superGaussian.shape[0]], dtype=np.float64)*self.Bright
             superEdge[superEdgePos:] = self.Dark
-            edge = np.zeros(self.Cols+np.int(np.ceil(2*superGaussian.shape[0]/self.SuperSampFactor)), dtype=np.float64)
+            edge = np.zeros(self.Cols+np.int64(np.ceil(2*superGaussian.shape[0]/self.SuperSampFactor)), dtype=np.float64)
             
             for col in range(0, self.Cols + 2):                         
                 edge[col] = np.sum(superEdge[col*self.SuperSampFactor:col*self.SuperSampFactor+superGaussian.shape[0]]*superGaussian)
