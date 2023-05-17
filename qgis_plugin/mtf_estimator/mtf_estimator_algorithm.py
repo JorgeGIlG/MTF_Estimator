@@ -328,18 +328,18 @@ class Mtf:
             raise Exception("Not enough transects")
         
         if self.__RefineEdgeSubPxStep == 2:
-            
-            self.ResultsStr += "Angle: %f\n" % -(np.arctan(b)*180/np.pi)
+
+            self.ResultsStr += "Angle: %f°\n" % -(np.arctan(b)*180/np.pi)
             
             if self.Plot: 
-                self.SubPlot[0,0].imshow(self.Image)
-                #self.SubPlot[0,0].plot(self.__PreRefinementEdgeSubPx[0],self.__PreRefinementEdgeSubPx[1], "+", color="black")            
-                self.SubPlot[0,0].plot(y, x, "+", color="black")
+                self.SubPlot[0,0].imshow(self.Image, cmap='gray')
+                #self.SubPlot[0,0].plot(self.__PreRefinementEdgeSubPx[0],self.__PreRefinementEdgeSubPx[1], "+", color="black")                            
                 xAux = np.arange(np.min(x), np.max(x), step=1e-3)
-                self.SubPlot[0,0].plot(a+b*xAux, xAux ,"-", color="black")
+                self.SubPlot[0,0].plot(a+b*xAux, xAux ,"-", color="green")
+                self.SubPlot[0,0].plot(y, x, "+", color="red")
                 self.SubPlot[0,0].set_title('Edge image')
-                self.SubPlot[0,0].axes.set_xlim(left=0, right=self.Image.shape[1])
-                self.SubPlot[0,0].axes.set_ylim([0, self.Image.shape[0]])   
+                self.SubPlot[0,0].axes.set_xlim(left=0, right=self.Image.shape[1])                
+                self.SubPlot[0,0].axes.set_ylim([self.Image.shape[0], 0])   
         
     
     def getEsfData(self):
@@ -425,7 +425,7 @@ class Mtf:
         oFile.close()
         """
                 
-        self.ResultsStr += "FWHM: %f px\n" % gw  # From estimated Gaussian
+        self.ResultsStr += "FWHM: %f px\n" % abs(gw)  # From estimated Gaussian
         
         if self.Plot:            
             esfSpline = interpolate.splev(xAux, lsfRep)        
