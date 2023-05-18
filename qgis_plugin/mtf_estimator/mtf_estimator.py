@@ -47,10 +47,10 @@ import os.path
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.core import (
-    QgsProject, 
-    Qgis, 
-    QgsRasterLayer, 
-    QgsVectorLayer, 
+    QgsProject,
+    Qgis,
+    QgsRasterLayer,
+    QgsVectorLayer,
     QgsMapLayerProxyModel
 )
 
@@ -84,7 +84,7 @@ class MtfEstimator:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&MTF Estimator')        
+        self.menu = self.tr(u'&MTF Estimator')
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
@@ -105,18 +105,17 @@ class MtfEstimator:
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('MtfEstimator', message)
 
-
     def add_action(
-        self,
-        icon_path,
-        text,
-        callback,
-        enabled_flag=True,
-        add_to_menu=True,
-        add_to_toolbar=True,
-        status_tip=None,
-        whats_this=None,
-        parent=None):
+            self,
+            icon_path,
+            text,
+            callback,
+            enabled_flag=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip=None,
+            whats_this=None,
+            parent=None):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -155,7 +154,7 @@ class MtfEstimator:
             added to self.actions list.
         :rtype: QAction
         """
-                        
+
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
         action.triggered.connect(callback)
@@ -193,7 +192,6 @@ class MtfEstimator:
         # will be set False in run()
         self.first_start = True
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -202,22 +200,19 @@ class MtfEstimator:
                 action)
             self.iface.removeToolBarIcon(action)
 
-        
     def console(self, *message):
         message = [str(i) for i in message]
-        self.dlg.plainTextEdit.appendPlainText(" ".join(message))        
-        
-        
-    def finish(self):        
-        self.dlg.done(0)        
-        
-        
+        self.dlg.plainTextEdit.appendPlainText(" ".join(message))
+
+    def finish(self):
+        self.dlg.done(0)
+
     def run_mtf_algo(self):
-        #self.dlg.runButton.setEnabled(False)
+        # self.dlg.runButton.setEnabled(False)
         self.console("__START__")
         raster_layer = self.dlg.mMapRasterLayerComboBox.currentLayer()
         band_n = self.dlg.mRasterBandComboBox.currentBand()
-                
+
         gdal_layer = gdal.Open(raster_layer.source(), gdal.GA_ReadOnly)
         gt = list(gdal_layer.GetGeoTransform())
         xsize = gdal_layer.RasterXSize
@@ -225,7 +220,7 @@ class MtfEstimator:
         band = gdal_layer.GetRasterBand(band_n)
         raster_srs = osr.SpatialReference()
         raster_srs.ImportFromWkt(gdal_layer.GetProjection())
-        vlayer = self.dlg.mMapVectorLayerComboBox.currentLayer()      
+        vlayer = self.dlg.mMapVectorLayerComboBox.currentLayer()
         vector_srs = osr.SpatialReference()
         vector_srs.ImportFromWkt(vlayer.crs().toWkt())
 
@@ -239,27 +234,23 @@ class MtfEstimator:
 
         if str(raster_srs) is '':
             coord_transform = None
-            self.console('WARNING: Raster with no CRS')    
+            self.console('WARNING: Raster with no CRS')
             gt[5] = -1*gt[5]
-        else:            
+        else:
             coord_transform = osr.CoordinateTransformation(vector_srs, raster_srs)
 
-        
         self.console(vector_srs.GetName())
         self.console("")
         self.console(raster_srs.GetName())
         self.console("")
         self.console(coord_transform)
-        
-        
-        
+
         memlayer_drv = ogr.GetDriverByName('Memory')
         memlayer_ds = memlayer_drv.CreateDataSource('')
         memlayer = memlayer_ds.CreateLayer('aoi', raster_srs, geom_type=ogr.wkbPolygon)
         memlayer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
         featureDefn = memlayer.GetLayerDefn()
-        
-        
+
         for qgs_feature in vlayer.getFeatures():
             featureDefn = memlayer.GetLayerDefn()
             memfeat = ogr.Feature(featureDefn)
@@ -270,58 +261,57 @@ class MtfEstimator:
             if not coord_transform is None:
                 geom.Transform(coord_transform)
             self.console(geom)
-            
+
             memfeat.SetGeometry(geom)
             memlayer.CreateFeature(memfeat)
-            
 
         # Get extent in raster coords
         e = np.array(memlayer.GetExtent()).copy()
-        e = np.reshape(e, [2,2])
+        e = np.reshape(e, [2, 2])
         e = np.array(np.meshgrid(e[0], e[1]))
         E = e.T.reshape(-1, 2)
-        m = np.reshape(np.array(gt).copy(),[2,3])
-        A = m[:,0]
-        m = m[:,1:]
+        m = np.reshape(np.array(gt).copy(), [2, 3])
+        A = m[:, 0]
+        m = m[:, 1:]
         M = np.linalg.inv(m)
-        col_list, row_list = np.matmul(M,(E-A).T)
+        col_list, row_list = np.matmul(M, (E-A).T)
         pxoffset = 5
-        col_min = int(np.max([np.floor(np.min(col_list)) - pxoffset,1]))
+        col_min = int(np.max([np.floor(np.min(col_list)) - pxoffset, 1]))
         col_max = int(np.min([np.ceil(np.max(col_list))+pxoffset, xsize-1]))
-        row_min = int(np.max([np.floor(np.min(row_list)) - pxoffset,1]))
+        row_min = int(np.max([np.floor(np.min(row_list)) - pxoffset, 1]))
         row_max = int(np.min([np.ceil(np.max(row_list))+pxoffset, ysize-1]))
         sub_gt = gt
         sub_gt[0] = gt[0] + gt[1]*col_min + gt[2]*row_min
         sub_gt[3] = gt[3] + gt[4]*col_min + gt[5]*row_min
         sub_xsize = int(col_max-col_min)
         sub_ysize = int(row_max-row_min)
-        
+
         memraster_drv = gdal.GetDriverByName('MEM')
         memraster = memraster_drv.Create('', sub_xsize, sub_ysize, 1, band.DataType)
-        
+
         memraster.SetProjection(gdal_layer.GetProjection())
         memraster.SetGeoTransform(sub_gt)
-        memband = memraster.GetRasterBand(1)                
+        memband = memraster.GetRasterBand(1)
         memband.WriteArray(np.zeros([sub_ysize, sub_xsize]))
         gdal.RasterizeLayer(memraster, [1], memlayer, burn_values=[1])
-        mask = memband.ReadAsArray(0, 0, sub_xsize, sub_ysize)                
+        mask = memband.ReadAsArray(0, 0, sub_xsize, sub_ysize)
         memband.WriteArray(mask*band.ReadAsArray(col_min, row_min, sub_xsize, sub_ysize))
         mask = None
-        
-        try:            
+
+        try:
             mtf = Mtf(memraster, logfunc=self.console)
         except Exception:
-            #self.console(Exception)
-            self.console("*** Unable to estimate ***")            
+            # self.console(Exception)
+            self.console("*** Unable to estimate ***")
             self.console("__END__")
-        else:           
+        else:
             self.console("__END__")
-            
-        #self.dlg.runButton.setEnabled(True)    
+
+        # self.dlg.runButton.setEnabled(True)
 
     def set_band(self):
         self.dlg.mRasterBandComboBox.setLayer(self.dlg.mMapRasterLayerComboBox.currentLayer())
-    
+
     def show_help(self):
         from PyQt5.QtCore import QUrl
         from PyQt5.QtGui import QDesktopServices
@@ -332,7 +322,7 @@ class MtfEstimator:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = MtfEstimatorDialog()                                                                         
+            self.dlg = MtfEstimatorDialog()
             self.dlg.closeButton.clicked.connect(self.finish)
             self.dlg.runButton.clicked.connect(self.run_mtf_algo)
             self.dlg.helpButton.clicked.connect(self.show_help)
@@ -342,4 +332,3 @@ class MtfEstimator:
             self.dlg.mMapVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
         # show the dialog
         self.dlg.show()
-
