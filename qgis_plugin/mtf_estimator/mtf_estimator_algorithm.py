@@ -481,19 +481,19 @@ class Mtf:
         band = None
         ds = None
         return image
+    
 
-#ImageFile = "data/baotou_CALVAL_L0R_000000_20200328T032332_202003T032334_MTF_12196_7333.tif"
+if __name__ == '__main__':
+    # Create test edge
+    """
+    angle="16.776550"
+    fwhm="2.101313"
+    imgFile = "/ram/myedge_angle_"+str(angle)+"_fwhm_"+str(fwhm)+".tif"
+    edge = Edge(imgFile, np.float64(fwhm), cols=500, rows=100, angle=np.float64(angle))
+    ImageFile = imgFile
+    """
 
-
-"""
-angle="16.776550"
-fwhm="2.101313"
-imgFile = "/ram/myedge_angle_"+str(angle)+"_fwhm_"+str(fwhm)+".tif"
-edge = Edge(imgFile, np.float64(fwhm), cols=500, rows=100, angle=np.float64(angle))
-ImageFile = imgFile
-"""
-
-#mtf = Mtf(ImageFile)
-
-
-# exit(0)
+    ImageFile = "../../data/baotou_CALVAL_L0R_000000_20200328T032332_202003T032334_MTF_12196_7333.tif"
+    mtf = Mtf(ImageFile)
+    plt.show()
+    exit(0)
