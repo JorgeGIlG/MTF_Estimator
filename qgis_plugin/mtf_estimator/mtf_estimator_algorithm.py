@@ -27,7 +27,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize, interpolate, ndimage, stats
 from scipy.optimize import OptimizeWarning
-
 class Edge:
     Cols = None
     Rows = None
@@ -93,7 +92,7 @@ class Transect:
     __X = None
     __Y = None
     __IsValid = True
-    __Snr = None
+    # __Snr = None
     __SigmoidParams = None
     # __MinPxs = np.float64(10) # Minimum acceptable PSF half-width (Not FWHM)
     __MinPxs = np.float64(5)  # Minimum acceptable PSF half-width (Not FWHM)
@@ -206,11 +205,10 @@ class Transect:
 
 class Mtf:
 
-    __PreRefinementEdgeSubPx = None
+    # __PreRefinementEdgeSubPx = None
     __RefineEdgeSubPxStep = 0
     Image = None
     ResultsStr = ""
-    #Transects = list()
     LVarThresh2 = np.float64(3e-2)          # Squared variance threshold for l
     OverSampFreq = np.float64(1e3)          # Samples per pixel
     PsfMaxHalfWidth = np.float64(10)        # Pixels
@@ -289,7 +287,7 @@ class Mtf:
         self.console("Refined subpx edge pos. Coefficient of correlation: ", r**2)
 
         diff = y - (a + b*x)
-        #avg = np.average(diff)
+        # avg = np.average(diff)
         std = np.std(diff)
 
         self.console("STEP: ", self.__RefineEdgeSubPxStep)
@@ -321,7 +319,7 @@ class Mtf:
 
             if self.Plot:
                 self.SubPlot[0, 0].imshow(self.Image, cmap='gray')
-                #self.SubPlot[0,0].plot(self.__PreRefinementEdgeSubPx[0],self.__PreRefinementEdgeSubPx[1], "+", color="black")
+                # self.SubPlot[0,0].plot(self.__PreRefinementEdgeSubPx[0],self.__PreRefinementEdgeSubPx[1], "+", color="black")
                 xAux = np.arange(np.min(x), np.max(x), step=1e-3)
                 self.SubPlot[0, 0].plot(a+b*xAux, xAux, "-", color="green")
                 self.SubPlot[0, 0].plot(y, x, "+", color="red")
@@ -330,6 +328,7 @@ class Mtf:
                 self.SubPlot[0, 0].axes.set_ylim([self.Image.shape[0], 0])
 
     def getEsfData(self):
+        # Merge multiple transect data and sort to build an oversampled transect
         esfData = None
         for t in self.Transects:
             if esfData is None:
@@ -337,7 +336,7 @@ class Mtf:
             else:
                 esfData = np.append(esfData, t.getRefinedData(), axis=1)
 
-        esfData = np.sort(esfData, axis=1)
+        esfData = esfData[:, esfData[0].argsort()]
         filter = np.logical_and([esfData[0] >= -self.PsfMaxHalfWidth], [esfData[0] <= self.PsfMaxHalfWidth])[0]
         return np.compress(filter, esfData, axis=1)
 
@@ -379,13 +378,10 @@ class Mtf:
         popt, pcov = optimize.curve_fit(sigmoid, x, y, p0=initGuess)
         a, b, l, s = popt
 
-        #m = np.float64(esfData.shape[1])
-
-        #x0 = [(m - np.sqrt(2*m))*1e-5, a, b/2, s, 2]
         x0 = [1e-9, a, b/2, s, 2]
-        #bounds = [(1e-12,None),(0,1),(0,1),(-self.PsfMaxHalfWidth,self.PsfMaxHalfWidth),(-self.PsfMaxHalfWidth,self.PsfMaxHalfWidth)]
         bounds = [
-            (1e-10, 0.2),
+            # (1e-10, 0.2),
+            (1e-5, 0.2),
             (0, 0.1),
             (0, 3),
             (-self.PsfMaxHalfWidth, self.PsfMaxHalfWidth),
@@ -403,28 +399,19 @@ class Mtf:
         lsfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
         lsfSpline = interpolate.splev(xAux, lsfRep, der=1)
 
-        """
-        # Write the LSF to a file for external analysis        
-        oFile = open("/tmp/lsf.csv", "w")
-        oFile.write("pixel, lsf\n")
-        for i in np.array([xAux,lsfSpline]).T:
-            oFile.write("%.24e,%.24e\n" % (i[0], i[1]))
-        oFile.close()
-        """
-
         self.ResultsStr += "FWHM: %f px\n" % abs(gw)  # From estimated Gaussian
 
         if self.Plot:
             esfSpline = interpolate.splev(xAux, lsfRep)
             self.SubPlot[0, 1].plot(esfData[0], esfData[1], "+")
-            self.SubPlot[0, 1].plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
+            # self.SubPlot[0, 1].plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
             self.SubPlot[0, 1].plot(xAux, esfSpline, "-", color="red")
 
             lsfPlot = self.SubPlot[0, 1].twinx()
-            #self.SubPlot[0,1].plot(xAux, lsfSpline,"-", color="blue")
-            #self.SubPlot[0,1].plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw),"-", color="brown")
+            # self.SubPlot[0,1].plot(xAux, lsfSpline,"-", color="blue")
+            # self.SubPlot[0,1].plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw),"-", color="brown")
             lsfPlot.plot(xAux, lsfSpline, "-", color="blue")
-            lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
+            # lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
             self.SubPlot[0, 1].set_title("ESF & LSF estimation")
 
         return np.array([xAux, lsfSpline])
@@ -481,7 +468,7 @@ class Mtf:
         band = None
         ds = None
         return image
-    
+
 
 if __name__ == '__main__':
     # Create test edge
