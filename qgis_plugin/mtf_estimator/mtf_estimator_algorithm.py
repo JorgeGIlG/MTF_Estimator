@@ -19,18 +19,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation. 
 """
-# try:
-#     from osgeo import gdal
-# except ImportError:
-#     import gdal
-from osgeo import gdal
-
-
+try:
+    from osgeo import gdal
+except ImportError:
+    import gdal
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize, interpolate, ndimage, stats
 from scipy.optimize import OptimizeWarning
-
 class Edge:
     Cols = None
     Rows = None
@@ -291,7 +287,7 @@ class Mtf:
         self.console("Refined subpx edge pos. Coefficient of correlation: ", r**2)
 
         diff = y - (a + b*x)
-        #avg = np.average(diff)
+        # avg = np.average(diff)
         std = np.std(diff)
 
         self.console("STEP: ", self.__RefineEdgeSubPxStep)
@@ -323,7 +319,7 @@ class Mtf:
 
             if self.Plot:
                 self.SubPlot[0, 0].imshow(self.Image, cmap='gray')
-                #self.SubPlot[0,0].plot(self.__PreRefinementEdgeSubPx[0],self.__PreRefinementEdgeSubPx[1], "+", color="black")
+                # self.SubPlot[0,0].plot(self.__PreRefinementEdgeSubPx[0],self.__PreRefinementEdgeSubPx[1], "+", color="black")
                 xAux = np.arange(np.min(x), np.max(x), step=1e-3)
                 self.SubPlot[0, 0].plot(a+b*xAux, xAux, "-", color="green")
                 self.SubPlot[0, 0].plot(y, x, "+", color="red")
@@ -340,7 +336,7 @@ class Mtf:
             else:
                 esfData = np.append(esfData, t.getRefinedData(), axis=1)
 
-        esfData = esfData[:,esfData[0].argsort()]
+        esfData = esfData[:, esfData[0].argsort()]
         filter = np.logical_and([esfData[0] >= -self.PsfMaxHalfWidth], [esfData[0] <= self.PsfMaxHalfWidth])[0]
         return np.compress(filter, esfData, axis=1)
 
@@ -381,7 +377,6 @@ class Mtf:
         initGuess = [np.min(y), np.max(y), 1.0, 0]
         popt, pcov = optimize.curve_fit(sigmoid, x, y, p0=initGuess)
         a, b, l, s = popt
-
 
         x0 = [1e-9, a, b/2, s, 2]
         bounds = [
@@ -473,7 +468,7 @@ class Mtf:
         band = None
         ds = None
         return image
-    
+
 
 if __name__ == '__main__':
     # Create test edge
