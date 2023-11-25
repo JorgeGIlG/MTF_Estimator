@@ -19,10 +19,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation. 
 """
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
+# try:
+#     from osgeo import gdal
+# except ImportError:
+#     import gdal
+from osgeo import gdal
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize, interpolate, ndimage, stats
@@ -93,7 +96,7 @@ class Transect:
     __X = None
     __Y = None
     __IsValid = True
-    __Snr = None
+    # __Snr = None
     __SigmoidParams = None
     # __MinPxs = np.float64(10) # Minimum acceptable PSF half-width (Not FWHM)
     __MinPxs = np.float64(5)  # Minimum acceptable PSF half-width (Not FWHM)
@@ -206,11 +209,10 @@ class Transect:
 
 class Mtf:
 
-    __PreRefinementEdgeSubPx = None
+    # __PreRefinementEdgeSubPx = None
     __RefineEdgeSubPxStep = 0
     Image = None
     ResultsStr = ""
-    #Transects = list()
     LVarThresh2 = np.float64(3e-2)          # Squared variance threshold for l
     OverSampFreq = np.float64(1e3)          # Samples per pixel
     PsfMaxHalfWidth = np.float64(10)        # Pixels
@@ -336,10 +338,29 @@ class Mtf:
                 esfData = t.getRefinedData()
             else:
                 esfData = np.append(esfData, t.getRefinedData(), axis=1)
+            # print(esfData.shape)
 
+        # print("#####################################")
+        # print(esfData)
         esfData = np.sort(esfData, axis=1)
+        # esfData2 = esfData.copy()
+        # print('Order')
+        # esfData = esfData[:,esfData[0].argsort()]
+        # print('Sort')
+        # esfData2 = np.sort(esfData2, axis=1)
+        plt.figure()
+        plt.plot(esfData[0], esfData[1],'r.', label='Wrong sort')
+        # plt.plot(esfData2[0], esfData2[1],'+', label='Right sort')
+        # plt.legend()
+        # print(esfData)
+        # print(esfData.shape)
+        # for i in range(esfData.shape[1]):
+        #     print(i, esfData2[0][i],',',esfData2[1][i],',',esfData[0][i],',',esfData[1][i])
+        # print("#####################################")
         filter = np.logical_and([esfData[0] >= -self.PsfMaxHalfWidth], [esfData[0] <= self.PsfMaxHalfWidth])[0]
-        return np.compress(filter, esfData, axis=1)
+        esfData = np.compress(filter, esfData, axis=1)
+        plt.plot(esfData[0], esfData[1],'g.', label='Wrong sort')
+        return esfData
 
     """
     Find best spline smoothing factor and gaussian
@@ -385,7 +406,8 @@ class Mtf:
         x0 = [1e-9, a, b/2, s, 2]
         #bounds = [(1e-12,None),(0,1),(0,1),(-self.PsfMaxHalfWidth,self.PsfMaxHalfWidth),(-self.PsfMaxHalfWidth,self.PsfMaxHalfWidth)]
         bounds = [
-            (1e-10, 0.2),
+            # (1e-10, 0.2),
+            (1e-5, 0.2),
             (0, 0.1),
             (0, 3),
             (-self.PsfMaxHalfWidth, self.PsfMaxHalfWidth),
@@ -403,29 +425,32 @@ class Mtf:
         lsfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
         lsfSpline = interpolate.splev(xAux, lsfRep, der=1)
 
-        """
-        # Write the LSF to a file for external analysis        
-        oFile = open("/tmp/lsf.csv", "w")
-        oFile.write("pixel, lsf\n")
-        for i in np.array([xAux,lsfSpline]).T:
-            oFile.write("%.24e,%.24e\n" % (i[0], i[1]))
-        oFile.close()
-        """
-
         self.ResultsStr += "FWHM: %f px\n" % abs(gw)  # From estimated Gaussian
 
         if self.Plot:
             esfSpline = interpolate.splev(xAux, lsfRep)
             self.SubPlot[0, 1].plot(esfData[0], esfData[1], "+")
-            self.SubPlot[0, 1].plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
+            # self.SubPlot[0, 1].plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
             self.SubPlot[0, 1].plot(xAux, esfSpline, "-", color="red")
 
             lsfPlot = self.SubPlot[0, 1].twinx()
-            #self.SubPlot[0,1].plot(xAux, lsfSpline,"-", color="blue")
-            #self.SubPlot[0,1].plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw),"-", color="brown")
+            # self.SubPlot[0,1].plot(xAux, lsfSpline,"-", color="blue")
+            # self.SubPlot[0,1].plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw),"-", color="brown")
             lsfPlot.plot(xAux, lsfSpline, "-", color="blue")
-            lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
+            # lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
             self.SubPlot[0, 1].set_title("ESF & LSF estimation")
+
+        fig, ax = plt.subplots(1,1)
+        esfSpline = interpolate.splev(xAux, lsfRep)
+        ax.plot(esfData[0], esfData[1], "+")
+        # ax.plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
+        ax.plot(xAux, esfSpline, "-", color="red")
+        lsfPlot = ax.twinx()
+        #ax.plot[0,1].plot(xAux, lsfSpline,"-", color="blue")
+        #ax.plot[0,1].plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw),"-", color="brown")
+        lsfPlot.plot(xAux, lsfSpline, "-", color="blue")
+        # lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
+        ax.set_title("ESF & LSF estimation")
 
         return np.array([xAux, lsfSpline])
 
