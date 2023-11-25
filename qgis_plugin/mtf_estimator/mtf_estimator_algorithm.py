@@ -332,35 +332,17 @@ class Mtf:
                 self.SubPlot[0, 0].axes.set_ylim([self.Image.shape[0], 0])
 
     def getEsfData(self):
+        # Merge multiple transect data and sort to build an oversampled transect
         esfData = None
         for t in self.Transects:
             if esfData is None:
                 esfData = t.getRefinedData()
             else:
                 esfData = np.append(esfData, t.getRefinedData(), axis=1)
-            # print(esfData.shape)
 
-        # print("#####################################")
-        # print(esfData)
-        esfData = np.sort(esfData, axis=1)
-        # esfData2 = esfData.copy()
-        # print('Order')
-        # esfData = esfData[:,esfData[0].argsort()]
-        # print('Sort')
-        # esfData2 = np.sort(esfData2, axis=1)
-        plt.figure()
-        plt.plot(esfData[0], esfData[1],'r.', label='Wrong sort')
-        # plt.plot(esfData2[0], esfData2[1],'+', label='Right sort')
-        # plt.legend()
-        # print(esfData)
-        # print(esfData.shape)
-        # for i in range(esfData.shape[1]):
-        #     print(i, esfData2[0][i],',',esfData2[1][i],',',esfData[0][i],',',esfData[1][i])
-        # print("#####################################")
+        esfData = esfData[:,esfData[0].argsort()]
         filter = np.logical_and([esfData[0] >= -self.PsfMaxHalfWidth], [esfData[0] <= self.PsfMaxHalfWidth])[0]
-        esfData = np.compress(filter, esfData, axis=1)
-        plt.plot(esfData[0], esfData[1],'g.', label='Wrong sort')
-        return esfData
+        return np.compress(filter, esfData, axis=1)
 
     """
     Find best spline smoothing factor and gaussian
@@ -400,11 +382,8 @@ class Mtf:
         popt, pcov = optimize.curve_fit(sigmoid, x, y, p0=initGuess)
         a, b, l, s = popt
 
-        #m = np.float64(esfData.shape[1])
 
-        #x0 = [(m - np.sqrt(2*m))*1e-5, a, b/2, s, 2]
         x0 = [1e-9, a, b/2, s, 2]
-        #bounds = [(1e-12,None),(0,1),(0,1),(-self.PsfMaxHalfWidth,self.PsfMaxHalfWidth),(-self.PsfMaxHalfWidth,self.PsfMaxHalfWidth)]
         bounds = [
             # (1e-10, 0.2),
             (1e-5, 0.2),
@@ -439,18 +418,6 @@ class Mtf:
             lsfPlot.plot(xAux, lsfSpline, "-", color="blue")
             # lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
             self.SubPlot[0, 1].set_title("ESF & LSF estimation")
-
-        fig, ax = plt.subplots(1,1)
-        esfSpline = interpolate.splev(xAux, lsfRep)
-        ax.plot(esfData[0], esfData[1], "+")
-        # ax.plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
-        ax.plot(xAux, esfSpline, "-", color="red")
-        lsfPlot = ax.twinx()
-        #ax.plot[0,1].plot(xAux, lsfSpline,"-", color="blue")
-        #ax.plot[0,1].plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw),"-", color="brown")
-        lsfPlot.plot(xAux, lsfSpline, "-", color="blue")
-        # lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
-        ax.set_title("ESF & LSF estimation")
 
         return np.array([xAux, lsfSpline])
 
