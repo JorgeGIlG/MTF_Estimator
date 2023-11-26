@@ -378,10 +378,11 @@ class Mtf:
         popt, pcov = optimize.curve_fit(sigmoid, x, y, p0=initGuess)
         a, b, l, s = popt
 
-        x0 = [1e-9, a, b/2, s, 2]
+        starting_smooth_val = 1e-5
+        x0 = [starting_smooth_val, a, b/2, s, 2]
         bounds = [
             # (1e-10, 0.2),
-            (1e-5, 0.2),
+            (starting_smooth_val, 0.2),
             (0, 0.1),
             (0, 3),
             (-self.PsfMaxHalfWidth, self.PsfMaxHalfWidth),
