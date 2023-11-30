@@ -20,15 +20,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation. 
 """
 # try:
+# except ImportError:
+#     import gdal
+
+
+
+
 from scipy.optimize import OptimizeWarning
 from scipy import optimize, interpolate, ndimage, stats
 import matplotlib.pyplot as plt
 import numpy as np
 from osgeo import gdal
-# except ImportError:
-#     import gdal
-
-
 class Edge:
     Cols = None
     Rows = None
@@ -379,37 +381,44 @@ class Mtf:
         oversampled_transect = Transect(x, y, None)
         sigmoid_params, _ = oversampled_transect.sigmoidFit(None)
         print('######################################################')
-        a, b, l, s = sigmoid_params        
-        fig, ax = plt.subplots(1,1)
+        a, b, l, s = sigmoid_params
+        fig, ax = plt.subplots(1, 1)
         ax.plot(x, y, '.')
         ax.plot(xAux, sigmoid(xAux, a, b, l, s), '-')
-
 
         def get_position(data, value):
             return np.argmin(np.abs(data-value))
 
+        def sigmoid_derivative(x):
+            return (b * l) / (np.exp(l * (s + x)) * (1 + np.exp(-l * (s + x)))**2)
+
         def optimize_smooth():
             # S = sigmoid(xAux, a, b, l, s)
-            # center_pos = get_position(S, s)    
-            # max_pos = get_position(S[center_pos:], np.quantile(S[center_pos:], 0.75))            
+            # center_pos = get_position(S, s)
+            # max_pos = get_position(S[center_pos:], np.quantile(S[center_pos:], 0.75))
             # distance_pos = max_pos - center_pos
             # xAux_center =  xAux[center_pos - distance_pos:center_pos + distance_pos]
             # filter = np.where(np.logical_and(x > xAux_center[0], x < xAux_center[-1]))
             # X = x[filter]
             # Y = y[filter]
 
-            X = x
-            Y = y
-            xAux_center = xAux
+            # X = x
+            # Y = y
+            # xAux_center = xAux
+
+            # def costFunc(params):
+            #     smooth = params
+            #     lsfRep = interpolate.splrep(X, Y, k=1, s=smooth)
+            #     lsfSpline = interpolate.splev(xAux_center, lsfRep, der=0)
+            #     return np.average(np.power(lsfSpline - sigmoid(xAux_center, a, b, l, s),2))
 
             def costFunc(params):
                 smooth = params
-                lsfRep = interpolate.splrep(X, Y, k=1, s=smooth)                
-                lsfSpline = interpolate.splev(xAux_center, lsfRep, der=0)
-                return np.average(np.power(lsfSpline - sigmoid(xAux_center, a, b, l, s),2))
-            
+                lsfRep = interpolate.splrep(x, y, k=1, s=smooth)
+                lsfSpline = interpolate.splev(xAux, lsfRep, der=1)
+                return np.average(np.power(lsfSpline - sigmoid_derivative(xAux), 2))
 
-            initGuess = [1.0]
+            initGuess = [1e-5]
             bounds = [
                 (1e-5, 1.0)
             ]
@@ -418,19 +427,18 @@ class Mtf:
                                     args=(), method='L-BFGS-B', jac=None,
                                     bounds=bounds,
                                     tol=None, callback=None, options={'disp': None, 'maxls': 20, 'iprint': -1, 'gtol': 1e-05, 'eps': 1e-08, 'maxiter': 15000, 'ftol': 2.220446049250313e-09, 'maxcor': 10, 'maxfun': 15000})
-  
+
             optSmooth = opt['x'][0]
             return optSmooth
         optSmooth = optimize_smooth()
 
-        
-            # def costFunc(params):
-            #     smooth = params
-            #     lsfRep = interpolate.splrep(x, y, k=3, s=smooth)
-            #     # psfSpline = interpolate.splev(xAux, lsfRep, der=1)
-            #     lsfSpline = interpolate.splev(xAux, lsfRep, der=0)
-            #     return np.average(np.power(lsfSpline - sigmoid(xAux, a, b, l, s),2))
-        
+        # def costFunc(params):
+        #     smooth = params
+        #     lsfRep = interpolate.splrep(x, y, k=3, s=smooth)
+        #     # psfSpline = interpolate.splev(xAux, lsfRep, der=1)
+        #     lsfSpline = interpolate.splev(xAux, lsfRep, der=0)
+        #     return np.average(np.power(lsfSpline - sigmoid(xAux, a, b, l, s),2))
+
         # # suggested_smooth = len(x) - np.sqrt(2*len(x))
         # # print('Suggested smooth', suggested_smooth)
 
@@ -447,20 +455,22 @@ class Mtf:
         # print(opt)
         # print(a,b,l,s)
         # optSmooth = opt['x'][0]
-        print('OptSmooth:', optSmooth)
+        print('OptSmooth 2:', optSmooth)
         # print(x[0], x[-1])
 
         lsfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
         ax.plot(xAux, interpolate.splev(xAux, lsfRep, der=0), 'b-')
         # plt.plot(xAux, interpolate.splev(xAux, lsfRep, der=1), 'r-')
         tax = ax.twinx()
-        tax.plot(xAux[1:], np.diff(interpolate.splev(xAux, lsfRep, der=0)), 'r-')
+        # tax.plot(xAux[1:], np.diff(interpolate.splev(xAux, lsfRep, der=0))/np.diff(xAux), 'r+')
+        tax.plot(xAux, interpolate.splev(xAux, lsfRep, der=1), 'g+')
+        tax.plot(xAux, sigmoid_derivative(xAux))
         ax.axvline(x=-s, color='black')
         # plt.axvline(x=s+l, color='black')
         # plt.axvline(x=s-l, color='black')
 
         return 0
-        
+
         ##############################################################################
 
         initGuess = [np.min(y), np.max(y), 1.0, 0]
