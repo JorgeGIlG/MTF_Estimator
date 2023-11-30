@@ -19,18 +19,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation. 
 """
-# try:
-# except ImportError:
-#     import gdal
-
-
-
-
-from scipy.optimize import OptimizeWarning
-from scipy import optimize, interpolate, ndimage, stats
-import matplotlib.pyplot as plt
+try:
+    from osgeo import gdal
+except ImportError:
+    import gdal
 import numpy as np
-from osgeo import gdal
+import matplotlib.pyplot as plt
+from scipy import optimize, interpolate, ndimage, stats
+from scipy.optimize import OptimizeWarning
+
+
+def sigmoid(x, a, b, l, s):
+    return a+b*(1/(1+np.power(np.e, -l*(x+s))))
 class Edge:
     Cols = None
     Rows = None
@@ -88,10 +88,6 @@ class Edge:
         dst_ds = None
 
 
-def sigmoid(x, a, b, l, s):
-    return a+b*(1/(1+np.power(np.e, -l*(x+s))))
-
-
 class Transect:
     __X = None
     __Y = None
@@ -141,28 +137,6 @@ class Transect:
 
         self.EdgePx = maxPx[0]
 
-    """
-    def getSnr(self):
-        if not self.__IsValid:
-            return None
-        
-        edgeIdx = np.where(self.__X == self.EdgePx)[0][0]
-                
-        l = self.__Y[:edgeIdx] 
-        r = self.__Y[edgeIdx:]
-        
-        lAvg = np.average(l)
-        rAvg = np.average(r)
-        
-        if lAvg < rAvg:
-            self.__Increase = True
-        else:
-            self.__Increase = False
-        
-        self.__Snr = np.abs(lAvg-rAvg)/np.sqrt(np.power(np.std(l),2)+np.power(np.std(r),2))
-        return self.__Snr
-    """
-
     def sigmoidFit(self, initGuess):
         if initGuess is None:
             initGuess = [np.min(self.__Y), np.max(self.__Y), 1.0, -self.EdgePx]
@@ -175,17 +149,6 @@ class Transect:
             return False, False
         except:
             return False, False
-
-        """        
-        if self.Plot:
-            a, b, l, s = popt
-            #plt.figure()
-            x = np.arange(np.min(self.__X), np.max(self.__X), step=1e-2)
-            plt.plot(self.__X, self.__Y, ".")
-            plt.plot(x, sigmoid(x, a, b, l, s), "-")
-            #print s
-            #plt.show()
-        """
 
         return popt, pcov
 
@@ -405,20 +368,8 @@ class Mtf:
         lsfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
         esfSpline = interpolate.splev(xAux, lsfRep, der=0)
         lsfSpline = interpolate.splev(xAux, lsfRep, der=1)
-        # lsfSpline = np.diff(esfSpline)
-        # lsfSpline = np.append(lsfSpline, lsfSpline[-1])
         lsfSpline /= np.max(lsfSpline)
         hm, left, center, right = fwhm_from_lsf(xAux, lsfSpline)
-
-        # fig, ax = plt.subplots(1, 1)
-        # ax.plot(x, y, '.')
-        # ax.plot(xAux, sigmoid(xAux, a, b, l, s), '-')
-        # tax = ax.twinx()
-        # tax.axvline(x=left, color='red', linestyle='--')
-        # tax.axvline(x=center, color='green', linestyle='--')
-        # tax.axvline(x=right, color='blue', linestyle='--')
-        # tax.axhline(y=hm, color='blue', linestyle='--')
-        # tax.plot(xAux, lsfSpline)
 
         self.ResultsStr += "FWHM: %f px\n" % (right - left)
 
