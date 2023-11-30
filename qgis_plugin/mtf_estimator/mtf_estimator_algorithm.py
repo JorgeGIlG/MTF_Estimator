@@ -23,14 +23,13 @@ try:
     from osgeo import gdal
 except ImportError:
     import gdal
+# from osgeo import gdal
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize, interpolate, ndimage, stats
 from scipy.optimize import OptimizeWarning
 
 
-def sigmoid(x, a, b, l, s):
-    return a+b*(1/(1+np.power(np.e, -l*(x+s))))
 class Edge:
     Cols = None
     Rows = None
@@ -334,9 +333,9 @@ class Mtf:
         def optimize_smooth():
             def costFunc(params):
                 smooth = params
-                lsfRep = interpolate.splrep(x, y, k=1, s=smooth)
-                lsfSpline = interpolate.splev(xAux, lsfRep, der=0)
-                return np.average(np.power(lsfSpline - sigmoid(xAux, a, b, l, s), 2))
+                esf_rep = interpolate.splrep(x, y, k=1, s=smooth)
+                esf_spline = interpolate.splev(xAux, esf_rep, der=0)
+                return np.average(np.power(esf_spline - sigmoid(xAux, a, b, l, s), 2))
 
             initGuess = [1.0]
             bounds = [
@@ -402,18 +401,12 @@ class Mtf:
         lsf = lsf[1]
         n = lsf.shape[0]
 
-        lsf = np.append(
-            np.append(
-                np.zeros([20*n]),
-                lsf),
-            np.zeros([20*n])
-        )
+        lsf = np.append(np.append(np.zeros([20*n]), lsf), np.zeros([20*n]))
 
         lsf = lsf/np.sum(lsf)
         n = np.float64(lsf.shape[0])
         mtf = np.fft.rfft(lsf)
         mtfFreq = np.linspace(0, 0.5*sampFreq, num=mtf.shape[0], dtype=np.float64)
-
         mtfVsFreq = interpolate.interp1d(mtfFreq, np.absolute(mtf), kind='linear')
         freqVsMtf = interpolate.interp1d(np.absolute(mtf), mtfFreq, kind='linear')
         self.ResultsStr += "MTF0: %s \n" % mtf[0]
@@ -443,6 +436,10 @@ class Mtf:
         band = None
         ds = None
         return image
+
+
+def sigmoid(x, a, b, l, s):
+    return a+b*(1/(1+np.power(np.e, -l*(x+s))))
 
 
 if __name__ == '__main__':

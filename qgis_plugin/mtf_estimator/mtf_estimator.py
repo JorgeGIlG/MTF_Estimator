@@ -22,7 +22,6 @@
  ***************************************************************************/
 """
 
-import osgeo
 try:
     from osgeo import gdal
 except ImportError:
@@ -44,6 +43,7 @@ from .resources import *
 # Import the code for the dialog
 from .mtf_estimator_dialog import MtfEstimatorDialog
 import os.path
+import traceback
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
@@ -226,7 +226,8 @@ class MtfEstimator:
         vector_srs.ImportFromWkt(vlayer.crs().toWkt())
 
         # OJO!!!!
-        # https://gdal.org/tutorials/osr_api_tut.html#crs-and-axis-order        
+        # https://gdal.org/tutorials/osr_api_tut.html#crs-and-axis-order
+        import osgeo
         if int(osgeo.__version__[0]) >= 3:
             # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
             raster_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
@@ -299,10 +300,11 @@ class MtfEstimator:
         mask = None
 
         try:
-            Mtf(memraster, logfunc=self.console)
-        except Exception:
-            # self.console(Exception)
+            mtf = Mtf(memraster, logfunc=self.console)
+        except Exception:            
+            self.console(traceback.format_exc())
             self.console("*** Unable to estimate ***")
+            self.console("Try a different polygon")
             self.console("__END__")
         else:
             self.console("__END__")
