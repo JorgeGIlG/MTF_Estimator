@@ -353,25 +353,11 @@ class Mtf:
 
         self.console("Optimizing LSF")
 
-        fLog2 = -4*np.log(2)
-
-        def gaussianFunc(x, a, b, c, w):
-            return a + b*np.power(np.e, fLog2*np.power(x-c, 2)/np.power(w, 2))
-
-        # def costFunc(params):
-        #     smooth, ga, gb, gc, gw = params
-        #     lsfRep = interpolate.splrep(x, y, k=3, s=smooth)
-        #     psfSpline = interpolate.splev(xAux, lsfRep, der=1)
-        #     return np.sum(np.abs(psfSpline - gaussianFunc(xAux, ga, gb, gc, gw)))
-
-        # def fwhm_from_lsf(x, y):  # Instead of of the Gaussian model
-        #     c = np.where(y == np.max(y))[0][0]  # x value for maximum, center
-        #     y = np.abs(y - np.max(y)/2.)
-        #     left = np.where(y[:c] == np.min(y[:c]))
-        #     right = np.where(y[c:] == np.min(y[c:])) + c
-        #     left = x[left[0][0]]
-        #     right = x[right[0][0]]
-        #     return right - left
+        def fwhm_from_lsf(x, y):  # Instead of of the Gaussian model
+            center_index = np.where(y == np.max(y))[0][0]  # x value for maximum, center
+            left_index = np.argmin(np.abs(y[:center_index] - np.max(y[:center_index])/2))
+            right_index = np.argmin(np.abs(y[center_index:] - np.max(y[center_index:])/2)) + center_index
+            return np.max(y)/2, x[left_index], x[center_index], x[right_index]
 
         x = esfData[0]
         y = esfData[1]
@@ -380,45 +366,16 @@ class Mtf:
 
         oversampled_transect = Transect(x, y, None)
         sigmoid_params, _ = oversampled_transect.sigmoidFit(None)
-        print('######################################################')
         a, b, l, s = sigmoid_params
-        fig, ax = plt.subplots(1, 1)
-        ax.plot(x, y, '.')
-        ax.plot(xAux, sigmoid(xAux, a, b, l, s), '-')
-
-        def get_position(data, value):
-            return np.argmin(np.abs(data-value))
-
-        def sigmoid_derivative(x):
-            return (b * l) / (np.exp(l * (s + x)) * (1 + np.exp(-l * (s + x)))**2)
 
         def optimize_smooth():
-            # S = sigmoid(xAux, a, b, l, s)
-            # center_pos = get_position(S, s)
-            # max_pos = get_position(S[center_pos:], np.quantile(S[center_pos:], 0.75))
-            # distance_pos = max_pos - center_pos
-            # xAux_center =  xAux[center_pos - distance_pos:center_pos + distance_pos]
-            # filter = np.where(np.logical_and(x > xAux_center[0], x < xAux_center[-1]))
-            # X = x[filter]
-            # Y = y[filter]
-
-            # X = x
-            # Y = y
-            # xAux_center = xAux
-
-            # def costFunc(params):
-            #     smooth = params
-            #     lsfRep = interpolate.splrep(X, Y, k=1, s=smooth)
-            #     lsfSpline = interpolate.splev(xAux_center, lsfRep, der=0)
-            #     return np.average(np.power(lsfSpline - sigmoid(xAux_center, a, b, l, s),2))
-
             def costFunc(params):
                 smooth = params
                 lsfRep = interpolate.splrep(x, y, k=1, s=smooth)
-                lsfSpline = interpolate.splev(xAux, lsfRep, der=1)
-                return np.average(np.power(lsfSpline - sigmoid_derivative(xAux), 2))
+                lsfSpline = interpolate.splev(xAux, lsfRep, der=0)
+                return np.average(np.power(lsfSpline - sigmoid(xAux, a, b, l, s), 2))
 
-            initGuess = [1e-5]
+            initGuess = [1.0]
             bounds = [
                 (1e-5, 1.0)
             ]
@@ -426,93 +383,60 @@ class Mtf:
                                     initGuess,
                                     args=(), method='L-BFGS-B', jac=None,
                                     bounds=bounds,
-                                    tol=None, callback=None, options={'disp': None, 'maxls': 20, 'iprint': -1, 'gtol': 1e-05, 'eps': 1e-08, 'maxiter': 15000, 'ftol': 2.220446049250313e-09, 'maxcor': 10, 'maxfun': 15000})
+                                    tol=None,
+                                    callback=None,
+                                    options={'disp': None,
+                                             'maxls': 20,
+                                             'iprint': -1,
+                                             'gtol': 1e-05,
+                                             'eps': 1e-08,
+                                             'maxiter': 15000,
+                                             'ftol': 2.220446049250313e-09,
+                                             'maxcor': 10,
+                                             'maxfun': 15000})
 
             optSmooth = opt['x'][0]
             return optSmooth
+
         optSmooth = optimize_smooth()
-
-        # def costFunc(params):
-        #     smooth = params
-        #     lsfRep = interpolate.splrep(x, y, k=3, s=smooth)
-        #     # psfSpline = interpolate.splev(xAux, lsfRep, der=1)
-        #     lsfSpline = interpolate.splev(xAux, lsfRep, der=0)
-        #     return np.average(np.power(lsfSpline - sigmoid(xAux, a, b, l, s),2))
-
-        # # suggested_smooth = len(x) - np.sqrt(2*len(x))
-        # # print('Suggested smooth', suggested_smooth)
-
-        # starting_smooth = 1e-5
-        # initGuess = [starting_smooth]
-        # bounds = [
-        #     (1e-5, 0.2)
-        # ]
-        # opt = optimize.minimize(costFunc,
-        #                         initGuess,
-        #                         args=(), method='L-BFGS-B', jac=None,
-        #                         bounds=bounds,
-        #                         tol=None, callback=None, options={'disp': None, 'maxls': 20, 'iprint': -1, 'gtol': 1e-05, 'eps': 1e-08, 'maxiter': 15000, 'ftol': 2.220446049250313e-09, 'maxcor': 10, 'maxfun': 15000})
-        # print(opt)
-        # print(a,b,l,s)
-        # optSmooth = opt['x'][0]
-        print('OptSmooth 2:', optSmooth)
-        # print(x[0], x[-1])
-
-        lsfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
-        ax.plot(xAux, interpolate.splev(xAux, lsfRep, der=0), 'b-')
-        # plt.plot(xAux, interpolate.splev(xAux, lsfRep, der=1), 'r-')
-        tax = ax.twinx()
-        # tax.plot(xAux[1:], np.diff(interpolate.splev(xAux, lsfRep, der=0))/np.diff(xAux), 'r+')
-        tax.plot(xAux, interpolate.splev(xAux, lsfRep, der=1), 'g+')
-        tax.plot(xAux, sigmoid_derivative(xAux))
-        ax.axvline(x=-s, color='black')
-        # plt.axvline(x=s+l, color='black')
-        # plt.axvline(x=s-l, color='black')
-
-        return 0
-
-        ##############################################################################
-
-        initGuess = [np.min(y), np.max(y), 1.0, 0]
-        popt, pcov = optimize.curve_fit(sigmoid, x, y, p0=initGuess)
-        a, b, l, s = popt
-
-        starting_smooth = 1e-5
-        x0 = [starting_smooth, a, b/2, s, 2]
-        bounds = [
-            # (1e-10, 0.2),
-            (starting_smooth, 0.2),
-            (0, 0.1),
-            (0, 3),
-            (-self.PsfMaxHalfWidth, self.PsfMaxHalfWidth),
-            (-self.PsfMaxHalfWidth, self.PsfMaxHalfWidth)
-        ]
-        opt = optimize.minimize(costFunc,
-                                x0,
-                                args=(), method='L-BFGS-B', jac=None,
-                                bounds=bounds,
-                                tol=None, callback=None, options={'disp': None, 'maxls': 20, 'iprint': -1, 'gtol': 1e-05, 'eps': 1e-08, 'maxiter': 15000, 'ftol': 2.220446049250313e-09, 'maxcor': 10, 'maxfun': 15000})
-        optSmooth, ga, gb, gc, gw = opt['x']
 
         self.ResultsStr += "Smooth: %e \n" % optSmooth
 
         lsfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
+        esfSpline = interpolate.splev(xAux, lsfRep, der=0)
         lsfSpline = interpolate.splev(xAux, lsfRep, der=1)
+        # lsfSpline = np.diff(esfSpline)
+        # lsfSpline = np.append(lsfSpline, lsfSpline[-1])
+        lsfSpline /= np.max(lsfSpline)
+        hm, left, center, right = fwhm_from_lsf(xAux, lsfSpline)
 
-        self.ResultsStr += "FWHM: %f px\n" % abs(gw)  # From estimated Gaussian
+        # fig, ax = plt.subplots(1, 1)
+        # ax.plot(x, y, '.')
+        # ax.plot(xAux, sigmoid(xAux, a, b, l, s), '-')
+        # tax = ax.twinx()
+        # tax.axvline(x=left, color='red', linestyle='--')
+        # tax.axvline(x=center, color='green', linestyle='--')
+        # tax.axvline(x=right, color='blue', linestyle='--')
+        # tax.axhline(y=hm, color='blue', linestyle='--')
+        # tax.plot(xAux, lsfSpline)
 
-        # if self.Plot:
-        #     esfSpline = interpolate.splev(xAux, lsfRep)
-        #     self.SubPlot[0, 1].plot(esfData[0], esfData[1], "+")
-        #     # self.SubPlot[0, 1].plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
-        #     self.SubPlot[0, 1].plot(xAux, esfSpline, "-", color="red")
+        self.ResultsStr += "FWHM: %f px\n" % (right - left)
 
-        #     lsfPlot = self.SubPlot[0, 1].twinx()
-        #     # self.SubPlot[0,1].plot(xAux, lsfSpline,"-", color="blue")
-        #     # self.SubPlot[0,1].plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw),"-", color="brown")
-        #     lsfPlot.plot(xAux, lsfSpline, "-", color="blue")
-        #     # lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
-        #     self.SubPlot[0, 1].set_title("ESF & LSF estimation")
+        if self.Plot:
+            self.SubPlot[0, 1].plot(x, y, "+", color='blue')
+            self.SubPlot[0, 1].plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
+            self.SubPlot[0, 1].plot(xAux, esfSpline, "-", color="red")
+
+            # lsfPlot = self.SubPlot[0, 1].twinx()
+            self.SubPlot[0, 1].plot(xAux, lsfSpline, "-", color="green")
+            # self.SubPlot[0,1].plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw),"-", color="brown")
+            # lsfPlot.plot(xAux, lsfSpline, "-", color="blue")
+            # lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
+            self.SubPlot[0, 1].axvline(x=left, color='black', linestyle='--')
+            self.SubPlot[0, 1].axvline(x=center, color='black', linestyle='--')
+            self.SubPlot[0, 1].axvline(x=right, color='black', linestyle='--')
+            self.SubPlot[0, 1].axhline(y=hm, color='black', linestyle='--')
+            self.SubPlot[0, 1].set_title("ESF & LSF estimation")
 
         return np.array([xAux, lsfSpline])
 
