@@ -27,7 +27,7 @@ except ImportError:
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize, interpolate, ndimage, stats
-from scipy.optimize import OptimizeWarning
+from scipy.optimize import OptimizeWarning, basinhopping
 
 
 class Edge:
@@ -331,94 +331,49 @@ class Mtf:
         a, b, l, s = sigmoid_params
 
         def optimize_smooth():
-            # def costFunc(params):
-            #     smooth = params
-            #     esf_rep = interpolate.splrep(x, y, k=1, s=smooth)
-            #     esf_spline = interpolate.splev(xAux, esf_rep, der=0)
-            #     return np.average(np.power(esf_spline - sigmoid(xAux, a, b, l, s), 2))
-
-            # initGuess = [15.0]
-            # bounds = [
-            #     (1e-5, 15.0)
-            # ]
-            # opt = optimize.minimize(costFunc,
-            #                         initGuess,
-            #                         args=(), method='L-BFGS-B', jac=None,
-            #                         bounds=bounds,
-            #                         tol=None,
-            #                         callback=None,
-            #                         options={'disp': None,
-            #                                  'maxls': 20,
-            #                                  'iprint': -1,
-            #                                  'gtol': 1e-05,
-            #                                  'eps': 1e-08,
-            #                                  'maxiter': 15000,
-            #                                  'ftol': 2.220446049250313e-09,
-            #                                  'maxcor': 10,
-            #                                  'maxfun': 15000})
-
-            # optSmooth = opt['x'][0]
-
-            from scipy.optimize import least_squares, minimize, minimize_scalar
+            global counter, niter
+            counter = 1
+            niter = 100
             sigmoid_vals = sigmoid(xAux, a, b, l, s)
 
-            ###############################################################################################
-            # def costFunc(params):
-            #     # smooth = params[0]
-            #     smooth = params
-            #     esf_rep = interpolate.splrep(x, y, k=1, s=smooth)
-            #     esf_spline = interpolate.splev(xAux, esf_rep, der=0)
-            #     cost = np.average(np.power(esf_spline - sigmoid_vals, 2))        
-            #     print(cost)
-            #     return cost
-            #     # return esf_spline - sigmoid_vals      
-
-            # opt = minimize_scalar(costFunc, bounds=(1e-5, 100.), method='bounded')
-            # print('OPT', opt)            
-            # optSmooth = opt['x']
-            # return optSmooth        
-            ###############################################################################################
-
-            import scipy
             def costFunc(params):
-                    # smooth = params[0]
-                    smooth = params
-                    esf_rep = interpolate.splrep(x, y, k=1, s=smooth)
-                    esf_spline = interpolate.splev(xAux, esf_rep, der=0)
-                    cost = np.average(np.power(esf_spline - sigmoid_vals, 2))        
-                    return cost
-                    # return esf_spline - sigmoid_vals      
+                smooth = params
+                esf_rep = interpolate.splrep(x, y, k=1, s=smooth)
+                esf_spline = interpolate.splev(xAux, esf_rep, der=0)
+                cost = np.average(np.power(esf_spline - sigmoid_vals, 2))
+                return cost
+
+            def callback(x, f, accept):
+                global counter, niter
+                print(f'Progress: {100.*(counter-1.)/niter}%', end='\r')
+                counter += 1
 
             x0 = [1.]
-            opt = scipy.optimize.basinhopping(costFunc, 
-                                        x0, 
-                                        niter=100, 
-                                        T=1.0, 
-                                        stepsize=0.5, 
-                                        minimizer_kwargs={'method': 'L-BFGS-B',
-                                                          'bounds': [(1e-5, 50.)]}, 
-                                        take_step=None, 
-                                        accept_test=None, 
-                                        callback=None, 
-                                        interval=50, 
-                                        disp=True, 
-                                        niter_success=None, 
-                                        seed=None, 
-                                        target_accept_rate=0.5, 
-                                        stepwise_factor=0.9)
-            
-            
-            
+            opt = basinhopping(costFunc,
+                               x0,
+                               niter=niter,
+                               T=1.0,
+                               stepsize=0.5,
+                               minimizer_kwargs={'method': 'L-BFGS-B',
+                                                 'bounds': [(1e-5, 50.)]},
+                               take_step=None,
+                               accept_test=None,
+                               callback=callback,
+                               interval=50,
+                               disp=False,
+                               niter_success=None,
+                               seed=None)
+
             optSmooth = opt['x']
-            return optSmooth   
+            return optSmooth
 
         optSmooth = optimize_smooth()
 
         self.ResultsStr += "Smooth: %e \n" % optSmooth
 
-        lsfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
-        esfSpline = interpolate.splev(xAux, lsfRep, der=0)
-        lsfSpline = interpolate.splev(xAux, lsfRep, der=1)
+        esfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
+        esfSpline = interpolate.splev(xAux, esfRep, der=0)
+        lsfSpline = interpolate.splev(xAux, esfRep, der=1)
         lsfSpline /= np.max(lsfSpline)
         hm, left, center, right = fwhm_from_lsf(xAux, lsfSpline)
 
