@@ -19,11 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation. 
 """
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
-# from osgeo import gdal
+from osgeo import gdal
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize, interpolate, ndimage, stats
