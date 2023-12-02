@@ -44,6 +44,7 @@ from .resources import *
 # Import the code for the dialog
 from .mtf_estimator_dialog import MtfEstimatorDialog
 import os.path
+import traceback
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
@@ -299,10 +300,11 @@ class MtfEstimator:
         mask = None
 
         try:
-            Mtf(memraster, logfunc=self.console)
-        except Exception:
-            # self.console(Exception)
+            mtf = Mtf(memraster, logfunc=self.console)
+        except Exception:            
+            self.console(traceback.format_exc())
             self.console("*** Unable to estimate ***")
+            self.console("Try a different polygon")
             self.console("__END__")
         else:
             self.console("__END__")
