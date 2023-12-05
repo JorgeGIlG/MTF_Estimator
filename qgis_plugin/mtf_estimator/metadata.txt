@@ -4,7 +4,7 @@
 
 [general]
 name=MTF Estimator
-qgisMinimumVersion=3.28
+qgisMinimumVersion=3.22
 description=Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation.
 version=1.4.0
 author=Jorge Gil
