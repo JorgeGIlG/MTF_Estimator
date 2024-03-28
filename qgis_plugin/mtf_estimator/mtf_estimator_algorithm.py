@@ -19,14 +19,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation. 
 """
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
+from osgeo import gdal
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize, interpolate, ndimage, stats
-from scipy.optimize import OptimizeWarning
+from scipy.optimize import OptimizeWarning, basinhopping
+
+
 class Edge:
     Cols = None
     Rows = None
@@ -84,10 +83,6 @@ class Edge:
         dst_ds = None
 
 
-def sigmoid(x, a, b, l, s):
-    return a+b*(1/(1+np.power(np.e, -l*(x+s))))
-
-
 class Transect:
     __X = None
     __Y = None
@@ -137,28 +132,6 @@ class Transect:
 
         self.EdgePx = maxPx[0]
 
-    """
-    def getSnr(self):
-        if not self.__IsValid:
-            return None
-        
-        edgeIdx = np.where(self.__X == self.EdgePx)[0][0]
-                
-        l = self.__Y[:edgeIdx] 
-        r = self.__Y[edgeIdx:]
-        
-        lAvg = np.average(l)
-        rAvg = np.average(r)
-        
-        if lAvg < rAvg:
-            self.__Increase = True
-        else:
-            self.__Increase = False
-        
-        self.__Snr = np.abs(lAvg-rAvg)/np.sqrt(np.power(np.std(l),2)+np.power(np.std(r),2))
-        return self.__Snr
-    """
-
     def sigmoidFit(self, initGuess):
         if initGuess is None:
             initGuess = [np.min(self.__Y), np.max(self.__Y), 1.0, -self.EdgePx]
@@ -171,17 +144,6 @@ class Transect:
             return False, False
         except:
             return False, False
-
-        """        
-        if self.Plot:
-            a, b, l, s = popt
-            #plt.figure()
-            x = np.arange(np.min(self.__X), np.max(self.__X), step=1e-2)
-            plt.plot(self.__X, self.__Y, ".")
-            plt.plot(x, sigmoid(x, a, b, l, s), "-")
-            #print s
-            #plt.show()
-        """
 
         return popt, pcov
 
@@ -227,11 +189,6 @@ class Mtf:
         self.Image = image
         rows, cols = image.shape
 
-        # Prepare plot
-        if self.Plot:
-            self.Figure, self.SubPlot = plt.subplots(2, 2)
-            self.Figure.subplots_adjust(hspace=0.2, wspace=0.2)
-
         # Create an initial list of valid transects
         initGuess = None
         x = np.float64(np.arange(0, cols))
@@ -255,8 +212,17 @@ class Mtf:
                 else:
                     t.invalidate()
                     self.console("Set to invalid due to bad 'l' covariance")
+                    # self.console("Covariance Matrix:\n", np.array2string(pcov))
 
-        self.console("Found ", len(self.Transects), "valid transects out of ", rows)
+        self.console("Found", len(self.Transects), "valid transects out of", rows)
+        if len(self.Transects) < 2:
+            self.console("Not enough valid transects. Try a bigger polygon or select a different edge. Exiting.")
+            return None
+
+        # Prepare plot
+        if self.Plot:
+            self.Figure, self.SubPlot = plt.subplots(2, 2)
+            self.Figure.subplots_adjust(hspace=0.2, wspace=0.2)
 
         for i in range(0, 2):  # First: Remove outliers. Second: Recalculate linear regression.
             self.refineEdgeSubPx()
@@ -349,69 +315,84 @@ class Mtf:
 
         self.console("Optimizing LSF")
 
-        fLog2 = -4*np.log(2)
-
-        def gaussianFunc(x, a, b, c, w):
-            return a + b*np.power(np.e, fLog2*np.power(x-c, 2)/np.power(w, 2))
-
-        def costFunc(params):
-            smooth, ga, gb, gc, gw = params
-            lsfRep = interpolate.splrep(x, y, k=3, s=smooth)
-            psfSpline = interpolate.splev(xAux, lsfRep, der=1)
-            return np.sum(np.abs(psfSpline - gaussianFunc(xAux, ga, gb, gc, gw)))
-
         def fwhm_from_lsf(x, y):  # Instead of of the Gaussian model
-            c = np.where(y == np.max(y))[0][0]  # x value for maximum, center
-            y = np.abs(y - np.max(y)/2.)
-            left = np.where(y[:c] == np.min(y[:c]))
-            right = np.where(y[c:] == np.min(y[c:])) + c
-            left = x[left[0][0]]
-            right = x[right[0][0]]
-            return right - left
+            center_index = np.where(y == np.max(y))[0][0]  # x value for maximum, center
+            left_index = np.argmin(np.abs(y[:center_index] - np.max(y[:center_index])/2))
+            right_index = np.argmin(np.abs(y[center_index:] - np.max(y[center_index:])/2)) + center_index
+            return np.max(y)/2, x[left_index], x[center_index], x[right_index]
 
         x = esfData[0]
         y = esfData[1]
 
         xAux = np.arange(np.min(x), np.max(x), step=1/self.OverSampFreq)
 
-        initGuess = [np.min(y), np.max(y), 1.0, 0]
-        popt, pcov = optimize.curve_fit(sigmoid, x, y, p0=initGuess)
-        a, b, l, s = popt
+        oversampled_transect = Transect(x, y, None)
+        sigmoid_params, _ = oversampled_transect.sigmoidFit(None)
+        a, b, l, s = sigmoid_params
 
-        x0 = [1e-9, a, b/2, s, 2]
-        bounds = [
-            # (1e-10, 0.2),
-            (1e-5, 0.2),
-            (0, 0.1),
-            (0, 3),
-            (-self.PsfMaxHalfWidth, self.PsfMaxHalfWidth),
-            (-self.PsfMaxHalfWidth, self.PsfMaxHalfWidth)
-        ]
-        opt = optimize.minimize(costFunc,
-                                x0,
-                                args=(), method='L-BFGS-B', jac=None,
-                                bounds=bounds,
-                                tol=None, callback=None, options={'disp': None, 'maxls': 20, 'iprint': -1, 'gtol': 1e-05, 'eps': 1e-08, 'maxiter': 15000, 'ftol': 2.220446049250313e-09, 'maxcor': 10, 'maxfun': 15000})
-        optSmooth, ga, gb, gc, gw = opt['x']
+        def optimize_smooth():
+            global counter, niter
+            counter = 1
+            niter = 100
+            sigmoid_vals = sigmoid(xAux, a, b, l, s)
+
+            def costFunc(params):
+                smooth = params
+                esf_rep = interpolate.splrep(x, y, k=1, s=smooth)
+                esf_spline = interpolate.splev(xAux, esf_rep, der=0)
+                cost = np.average(np.power(esf_spline - sigmoid_vals, 2))
+                return cost
+
+            def callback(x, f, accept):
+                global counter, niter
+                print(f'Progress: {100.*(counter-1.)/niter}%', end='\r')
+                counter += 1
+
+            x0 = [1.]
+            opt = basinhopping(costFunc,
+                               x0,
+                               niter=niter,
+                               T=1.0,
+                               stepsize=0.5,
+                               minimizer_kwargs={'method': 'L-BFGS-B',
+                                                 'bounds': [(1e-5, 50.)]},
+                               take_step=None,
+                               accept_test=None,
+                               callback=callback,
+                               interval=50,
+                               disp=False,
+                               niter_success=None,
+                               seed=None)
+
+            optSmooth = opt['x']
+            return optSmooth
+
+        optSmooth = optimize_smooth()
 
         self.ResultsStr += "Smooth: %e \n" % optSmooth
 
-        lsfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
-        lsfSpline = interpolate.splev(xAux, lsfRep, der=1)
+        esfRep = interpolate.splrep(x, y, k=3, s=optSmooth)
+        esfSpline = interpolate.splev(xAux, esfRep, der=0)
+        lsfSpline = interpolate.splev(xAux, esfRep, der=1)
+        lsfSpline /= np.max(lsfSpline)
+        hm, left, center, right = fwhm_from_lsf(xAux, lsfSpline)
 
-        self.ResultsStr += "FWHM: %f px\n" % abs(gw)  # From estimated Gaussian
+        self.ResultsStr += "FWHM: %f px\n" % (right - left)
 
         if self.Plot:
-            esfSpline = interpolate.splev(xAux, lsfRep)
-            self.SubPlot[0, 1].plot(esfData[0], esfData[1], "+")
-            # self.SubPlot[0, 1].plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
+            self.SubPlot[0, 1].plot(x, y, "+", color='blue')
+            self.SubPlot[0, 1].plot(xAux, sigmoid(xAux, a, b, l, s), "-", color="black")
             self.SubPlot[0, 1].plot(xAux, esfSpline, "-", color="red")
 
-            lsfPlot = self.SubPlot[0, 1].twinx()
-            # self.SubPlot[0,1].plot(xAux, lsfSpline,"-", color="blue")
+            # lsfPlot = self.SubPlot[0, 1].twinx()
+            self.SubPlot[0, 1].plot(xAux, lsfSpline, "-", color="green")
             # self.SubPlot[0,1].plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw),"-", color="brown")
-            lsfPlot.plot(xAux, lsfSpline, "-", color="blue")
+            # lsfPlot.plot(xAux, lsfSpline, "-", color="blue")
             # lsfPlot.plot(xAux, gaussianFunc(xAux, ga, gb, gc, gw), "-", color="brown")
+            self.SubPlot[0, 1].axvline(x=left, color='black', linestyle='--')
+            self.SubPlot[0, 1].axvline(x=center, color='black', linestyle='--')
+            self.SubPlot[0, 1].axvline(x=right, color='black', linestyle='--')
+            self.SubPlot[0, 1].axhline(y=hm, color='black', linestyle='--')
             self.SubPlot[0, 1].set_title("ESF & LSF estimation")
 
         return np.array([xAux, lsfSpline])
@@ -427,18 +408,12 @@ class Mtf:
         lsf = lsf[1]
         n = lsf.shape[0]
 
-        lsf = np.append(
-            np.append(
-                np.zeros([20*n]),
-                lsf),
-            np.zeros([20*n])
-        )
+        lsf = np.append(np.append(np.zeros([20*n]), lsf), np.zeros([20*n]))
 
         lsf = lsf/np.sum(lsf)
         n = np.float64(lsf.shape[0])
         mtf = np.fft.rfft(lsf)
         mtfFreq = np.linspace(0, 0.5*sampFreq, num=mtf.shape[0], dtype=np.float64)
-
         mtfVsFreq = interpolate.interp1d(mtfFreq, np.absolute(mtf), kind='linear')
         freqVsMtf = interpolate.interp1d(np.absolute(mtf), mtfFreq, kind='linear')
         self.ResultsStr += "MTF0: %s \n" % mtf[0]
@@ -468,6 +443,10 @@ class Mtf:
         band = None
         ds = None
         return image
+
+
+def sigmoid(x, a, b, l, s):
+    return a+b*(1/(1+np.power(np.e, -l*(x+s))))
 
 
 if __name__ == '__main__':
