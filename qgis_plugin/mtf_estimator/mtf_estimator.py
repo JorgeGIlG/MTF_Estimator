@@ -8,7 +8,7 @@
                               -------------------
         begin                : 2020-07-12
         git sha              : $Format:%H$
-        copyright            : (C) 2020 by Jorge Gil
+        copyright            : (C) 2025 by Jorge Gil
         email                : jorge.gil@tutanota.de
  ***************************************************************************/
 
@@ -221,19 +221,28 @@ class MtfEstimator:
         ysize = gdal_layer.RasterYSize
         band = gdal_layer.GetRasterBand(band_n)
         raster_srs = osr.SpatialReference()
-        raster_srs.ImportFromWkt(gdal_layer.GetProjection())
+        proj_wkt = gdal_layer.GetProjection()
         vlayer = self.dlg.mMapVectorLayerComboBox.currentLayer()
         vector_srs = osr.SpatialReference()
         vector_srs.ImportFromWkt(vlayer.crs().toWkt())
+
+        has_raster_crs = False
+        if proj_wkt and proj_wkt.strip():
+            try:
+                raster_srs.ImportFromWkt(proj_wkt)
+                has_raster_crs = True
+            except RuntimeError:
+                self.console('WARNING: Raster CRS WKT is invalid, treating as no CRS')
 
         # OJO!!!!
         # https://gdal.org/tutorials/osr_api_tut.html#crs-and-axis-order        
         if int(osgeo.__version__[0]) >= 3:
             # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
-            raster_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+            if has_raster_crs:
+                raster_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
             vector_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
 
-        if str(raster_srs) is '':
+        if not has_raster_crs:
             coord_transform = None
             self.console('WARNING: Raster with no CRS')
             gt[5] = -1*gt[5]
