@@ -6,9 +6,9 @@
 name=MTF Estimator
 qgisMinimumVersion=3.28
 description=Robust ESF, PSF, FWHM & MTF estimation from low quality targets and synthetic edge creation.
-version=1.4.0
+version=1.4.1
 author=Jorge Gil
-email=jorge.gil@tutanota.de
+email=jorge.gil@gmail.com
 
 about=The algorithm implemented here is based on the slanted-edge sub-pixel sampling concept. It uses a tilted knife-edge image to fit a numeric model to estimate a PSF from which the MTF is obtained.
 
