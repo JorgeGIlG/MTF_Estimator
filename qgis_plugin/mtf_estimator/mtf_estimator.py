@@ -35,8 +35,7 @@ try:
     from osgeo import osr
 except ImportError:
     import osr
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
-from PyQt5.QtWidgets import QAction, QPlainTextEdit
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl
 from .mtf_estimator_algorithm import Mtf, Transect, sigmoid
 import numpy as np
 # Initialize Qt resources from file resources.py
@@ -46,7 +45,7 @@ from .mtf_estimator_dialog import MtfEstimatorDialog
 import os.path
 import traceback
 
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtGui import QDesktopServices, QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.core import (
     QgsProject,
@@ -73,7 +72,8 @@ class MtfEstimator:
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
-        locale = QSettings().value('locale/userLocale')[0:2]
+        locale_value = QSettings().value('locale/userLocale', 'en')
+        locale = str(locale_value)[0:2]
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
@@ -324,8 +324,6 @@ class MtfEstimator:
         self.dlg.mRasterBandComboBox.setLayer(self.dlg.mMapRasterLayerComboBox.currentLayer())
 
     def show_help(self):
-        from PyQt5.QtCore import QUrl
-        from PyQt5.QtGui import QDesktopServices
         QDesktopServices.openUrl(QUrl('https://github.com/JorgeGIlG/MTF_Estimator'))
 
     def run(self):

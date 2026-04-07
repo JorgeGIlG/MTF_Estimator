@@ -189,6 +189,11 @@ class Mtf:
         self.Image = image
         rows, cols = image.shape
 
+        # Prepare plot
+        if self.Plot:
+            self.Figure, self.SubPlot = plt.subplots(2, 2)
+            self.Figure.subplots_adjust(hspace=0.2, wspace=0.2)
+
         # Create an initial list of valid transects
         initGuess = None
         x = np.float64(np.arange(0, cols))
@@ -212,17 +217,8 @@ class Mtf:
                 else:
                     t.invalidate()
                     self.console("Set to invalid due to bad 'l' covariance")
-                    # self.console("Covariance Matrix:\n", np.array2string(pcov))
 
-        self.console("Found", len(self.Transects), "valid transects out of", rows)
-        if len(self.Transects) < 2:
-            self.console("Not enough valid transects. Try a bigger polygon or select a different edge. Exiting.")
-            return None
-
-        # Prepare plot
-        if self.Plot:
-            self.Figure, self.SubPlot = plt.subplots(2, 2)
-            self.Figure.subplots_adjust(hspace=0.2, wspace=0.2)
+        self.console("Found ", len(self.Transects), "valid transects out of ", rows)
 
         for i in range(0, 2):  # First: Remove outliers. Second: Recalculate linear regression.
             self.refineEdgeSubPx()
