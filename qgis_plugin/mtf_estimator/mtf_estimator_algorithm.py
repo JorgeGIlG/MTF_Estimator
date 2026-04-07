@@ -194,38 +194,43 @@ class Mtf:
             self.Figure, self.SubPlot = plt.subplots(2, 2)
             self.Figure.subplots_adjust(hspace=0.2, wspace=0.2)
 
-        # Create an initial list of valid transects
-        initGuess = None
-        x = np.float64(np.arange(0, cols))
-        for i in range(0, rows):
-            r = image[i, :]
-            self.console("Row:", i)
-            t = Transect(x, r, i, logfunc=logfunc)
+        try:
+            # Create an initial list of valid transects
+            initGuess = None
+            x = np.float64(np.arange(0, cols))
+            for i in range(0, rows):
+                r = image[i, :]
+                self.console("Row:", i)
+                t = Transect(x, r, i, logfunc=logfunc)
 
-            # Find subpx edge position
-            if t.isValid():
-                popt, pcov = t.sigmoidFit(initGuess)
+                # Find subpx edge position
+                if t.isValid():
+                    popt, pcov = t.sigmoidFit(initGuess)
 
-                if popt is False:
-                    t.invalidate()
-                    self.console("Unable to fit row")
-                    continue
+                    if popt is False:
+                        t.invalidate()
+                        self.console("Unable to fit row")
+                        continue
 
-                if pcov[2][2] < self.LVarThresh2:
-                    initGuess = t.getInitGuess()
-                    self.Transects.append(t)
-                else:
-                    t.invalidate()
-                    self.console("Set to invalid due to bad 'l' covariance")
+                    if pcov[2][2] < self.LVarThresh2:
+                        initGuess = t.getInitGuess()
+                        self.Transects.append(t)
+                    else:
+                        t.invalidate()
+                        self.console("Set to invalid due to bad 'l' covariance")
 
-        self.console("Found ", len(self.Transects), "valid transects out of ", rows)
+            self.console("Found ", len(self.Transects), "valid transects out of ", rows)
 
-        for i in range(0, 2):  # First: Remove outliers. Second: Recalculate linear regression.
-            self.refineEdgeSubPx()
+            for i in range(0, 2):  # First: Remove outliers. Second: Recalculate linear regression.
+                self.refineEdgeSubPx()
 
-        lsfData = self.getEsfData()
-        lsf = self.calcOptimizedLsf(lsfData)
-        self.calcMtf(lsf)
+            lsfData = self.getEsfData()
+            lsf = self.calcOptimizedLsf(lsfData)
+            self.calcMtf(lsf)
+        except Exception:
+            if self.Figure is not None:
+                plt.close(self.Figure)
+            raise
 
     def console(self, *message):  # May be overriden
         message = [str(i) for i in message]
