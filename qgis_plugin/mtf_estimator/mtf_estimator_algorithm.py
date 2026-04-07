@@ -360,7 +360,7 @@ class Mtf:
                                niter_success=None,
                                seed=None)
 
-            optSmooth = opt['x']
+            optSmooth = float(np.atleast_1d(opt['x'])[0])
             return optSmooth
 
         optSmooth = optimize_smooth()
