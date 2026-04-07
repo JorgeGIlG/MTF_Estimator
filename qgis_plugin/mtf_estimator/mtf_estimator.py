@@ -8,7 +8,7 @@
                               -------------------
         begin                : 2020-07-12
         git sha              : $Format:%H$
-        copyright            : (C) 2025 by Jorge Gil
+        copyright            : (C) 2026 by Jorge Gil
         email                : jorge.gil@tutanota.de
  ***************************************************************************/
 
@@ -211,9 +211,13 @@ class MtfEstimator:
 
     def run_mtf_algo(self):
         # self.dlg.runButton.setEnabled(False)
+        self.dlg.plainTextEdit.clear()
         self.console("__START__")
         raster_layer = self.dlg.mMapRasterLayerComboBox.currentLayer()
         band_n = self.dlg.mRasterBandComboBox.currentBand()
+        band_label = self.dlg.mRasterBandComboBox.currentText() or "Band {}".format(band_n)
+        self.console("Edge raster layer:", raster_layer.name() if raster_layer else "<none>")
+        self.console("Edge raster band:", band_label)
 
         gdal_layer = gdal.Open(raster_layer.source(), gdal.GA_ReadOnly)
         gt = list(gdal_layer.GetGeoTransform())
@@ -249,11 +253,19 @@ class MtfEstimator:
         else:
             coord_transform = osr.CoordinateTransformation(vector_srs, raster_srs)
 
-        self.console(vector_srs.GetName())
-        self.console("")
-        self.console(raster_srs.GetName())
-        self.console("")
-        self.console(coord_transform)
+        self.console("AOI CRS:", vector_srs.GetName() or "<none>")
+        self.console("Raster CRS:", raster_srs.GetName() or "<none>")
+        if coord_transform is None:
+            self.console("Coordinate transform:", "<not used; raster has no CRS>")
+        else:
+            self.console("Coordinate transform:", coord_transform)
+            self.console(
+                "Reprojection:",
+                "{} -> {}".format(
+                    vector_srs.GetName() or "<none>",
+                    raster_srs.GetName() or "<none>"
+                )
+            )
 
         memlayer_drv = ogr.GetDriverByName('Memory')
         memlayer_ds = memlayer_drv.CreateDataSource('')
@@ -265,12 +277,14 @@ class MtfEstimator:
             featureDefn = memlayer.GetLayerDefn()
             memfeat = ogr.Feature(featureDefn)
             geom = qgs_feature.geometry()
-            self.console(geom.asWkt())
+            self.console("Original polygon WKT:", geom.asWkt())
             geom = geom.asWkb()
             geom = ogr.CreateGeometryFromWkb(geom)
             if not coord_transform is None:
                 geom.Transform(coord_transform)
-            self.console(geom)
+                self.console("Reprojected polygon WKT:", geom.ExportToWkt())
+            else:
+                self.console("Reprojected polygon WKT:", "<not reprojected>")
 
             memfeat.SetGeometry(geom)
             memlayer.CreateFeature(memfeat)
