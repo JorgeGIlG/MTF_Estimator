@@ -205,6 +205,7 @@ class MtfEstimator:
     def console(self, *message):
         message = [str(i) for i in message]
         self.dlg.plainTextEdit.appendPlainText(" ".join(message))
+        QCoreApplication.processEvents()
 
     def finish(self):
         self.dlg.done(0)
