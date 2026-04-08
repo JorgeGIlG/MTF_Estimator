@@ -35,7 +35,7 @@ try:
     from osgeo import osr
 except ImportError:
     import osr
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QDateTime
 from .mtf_estimator_algorithm import Mtf, Transect, sigmoid
 import numpy as np
 # Initialize Qt resources from file resources.py
@@ -204,136 +204,243 @@ class MtfEstimator:
 
     def console(self, *message):
         message = [str(i) for i in message]
-        self.dlg.plainTextEdit.appendPlainText(" ".join(message))
+        timestamp = QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
+        self.dlg.plainTextEdit.appendPlainText("[{}] {}".format(timestamp, " ".join(message)))
         QCoreApplication.processEvents()
 
     def finish(self):
         self.dlg.done(0)
 
     def run_mtf_algo(self):
-        # self.dlg.runButton.setEnabled(False)
-        self.dlg.plainTextEdit.clear()
-        self.console("__START__")
-        raster_layer = self.dlg.mMapRasterLayerComboBox.currentLayer()
-        band_n = self.dlg.mRasterBandComboBox.currentBand()
-        band_label = self.dlg.mRasterBandComboBox.currentText() or "Band {}".format(band_n)
-        self.console("Edge raster layer:", raster_layer.name() if raster_layer else "<none>")
-        self.console("Edge raster band:", band_label)
-
-        gdal_layer = gdal.Open(raster_layer.source(), gdal.GA_ReadOnly)
-        gt = list(gdal_layer.GetGeoTransform())
-        xsize = gdal_layer.RasterXSize
-        ysize = gdal_layer.RasterYSize
-        band = gdal_layer.GetRasterBand(band_n)
-        raster_srs = osr.SpatialReference()
-        proj_wkt = gdal_layer.GetProjection()
-        vlayer = self.dlg.mMapVectorLayerComboBox.currentLayer()
-        vector_srs = osr.SpatialReference()
-        vector_srs.ImportFromWkt(vlayer.crs().toWkt())
-
-        has_raster_crs = False
-        if proj_wkt and proj_wkt.strip():
-            try:
-                raster_srs.ImportFromWkt(proj_wkt)
-                has_raster_crs = True
-            except RuntimeError:
-                self.console('WARNING: Raster CRS WKT is invalid, treating as no CRS')
-
-        # OJO!!!!
-        # https://gdal.org/tutorials/osr_api_tut.html#crs-and-axis-order        
-        if int(osgeo.__version__[0]) >= 3:
-            # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
-            if has_raster_crs:
-                raster_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
-            vector_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
-
-        if not has_raster_crs:
-            coord_transform = None
-            self.console('WARNING: Raster with no CRS')
-            gt[5] = -1*gt[5]
-        else:
-            coord_transform = osr.CoordinateTransformation(vector_srs, raster_srs)
-
-        self.console("AOI CRS:", vector_srs.GetName() or "<none>")
-        self.console("Raster CRS:", raster_srs.GetName() or "<none>")
-        if coord_transform is None:
-            self.console("Coordinate transform:", "<not used; raster has no CRS>")
-        else:
-            self.console("Coordinate transform:", coord_transform)
-            self.console(
-                "Reprojection:",
-                "{} -> {}".format(
-                    vector_srs.GetName() or "<none>",
-                    raster_srs.GetName() or "<none>"
-                )
-            )
-
-        memlayer_drv = ogr.GetDriverByName('Memory')
-        memlayer_ds = memlayer_drv.CreateDataSource('')
-        memlayer = memlayer_ds.CreateLayer('aoi', raster_srs, geom_type=ogr.wkbPolygon)
-        memlayer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
-        featureDefn = memlayer.GetLayerDefn()
-
-        for qgs_feature in vlayer.getFeatures():
-            featureDefn = memlayer.GetLayerDefn()
-            memfeat = ogr.Feature(featureDefn)
-            geom = qgs_feature.geometry()
-            self.console("Original polygon WKT:", geom.asWkt())
-            geom = geom.asWkb()
-            geom = ogr.CreateGeometryFromWkb(geom)
-            if not coord_transform is None:
-                geom.Transform(coord_transform)
-                self.console("Reprojected polygon WKT:", geom.ExportToWkt())
-            else:
-                self.console("Reprojected polygon WKT:", "<not reprojected>")
-
-            memfeat.SetGeometry(geom)
-            memlayer.CreateFeature(memfeat)
-
-        # Get extent in raster coords
-        e = np.array(memlayer.GetExtent()).copy()
-        e = np.reshape(e, [2, 2])
-        e = np.array(np.meshgrid(e[0], e[1]))
-        E = e.T.reshape(-1, 2)
-        m = np.reshape(np.array(gt).copy(), [2, 3])
-        A = m[:, 0]
-        m = m[:, 1:]
-        M = np.linalg.inv(m)
-        col_list, row_list = np.matmul(M, (E-A).T)
-        pxoffset = 5
-        col_min = int(np.max([np.floor(np.min(col_list)) - pxoffset, 1]))
-        col_max = int(np.min([np.ceil(np.max(col_list))+pxoffset, xsize-1]))
-        row_min = int(np.max([np.floor(np.min(row_list)) - pxoffset, 1]))
-        row_max = int(np.min([np.ceil(np.max(row_list))+pxoffset, ysize-1]))
-        sub_gt = gt
-        sub_gt[0] = gt[0] + gt[1]*col_min + gt[2]*row_min
-        sub_gt[3] = gt[3] + gt[4]*col_min + gt[5]*row_min
-        sub_xsize = int(col_max-col_min)
-        sub_ysize = int(row_max-row_min)
-
-        memraster_drv = gdal.GetDriverByName('MEM')
-        memraster = memraster_drv.Create('', sub_xsize, sub_ysize, 1, band.DataType)
-
-        memraster.SetProjection(gdal_layer.GetProjection())
-        memraster.SetGeoTransform(sub_gt)
-        memband = memraster.GetRasterBand(1)
-        memband.WriteArray(np.zeros([sub_ysize, sub_xsize]))
-        gdal.RasterizeLayer(memraster, [1], memlayer, burn_values=[1])
-        mask = memband.ReadAsArray(0, 0, sub_xsize, sub_ysize)
-        memband.WriteArray(mask*band.ReadAsArray(col_min, row_min, sub_xsize, sub_ysize))
-        mask = None
-
+        self.dlg.runButton.setEnabled(False)
         try:
-            mtf = Mtf(memraster, logfunc=self.console)
-        except Exception:            
-            self.console(traceback.format_exc())
-            self.console("*** Unable to estimate ***")
-            self.console("Try a different polygon")
-            self.console("__END__")
-        else:
-            self.console("__END__")
+            self.console("__START__")
+            raster_layer = self.dlg.mMapRasterLayerComboBox.currentLayer()
+            vlayer = self.dlg.mMapVectorLayerComboBox.currentLayer()
+            band_n = self.dlg.mRasterBandComboBox.currentBand()
+            band_label = self.dlg.mRasterBandComboBox.currentText() or "Band {}".format(band_n)
+            self.console("Edge raster layer:", raster_layer.name() if raster_layer else "<none>")
+            self.console("Edge raster band:", band_label)
+            self.console("AOI layer:", vlayer.name() if vlayer else "<none>")
 
-        # self.dlg.runButton.setEnabled(True)
+            if raster_layer is None:
+                self.console("ERROR: No edge raster layer selected.")
+                self.console("__END__")
+                return
+
+            if vlayer is None:
+                self.console("ERROR: No AOI layer selected.")
+                self.console("__END__")
+                return
+
+            gdal_layer = gdal.Open(raster_layer.source(), gdal.GA_ReadOnly)
+            if gdal_layer is None:
+                self.console("ERROR: Unable to open raster source with GDAL:", raster_layer.source())
+                self.console("__END__")
+                return
+
+            if band_n < 1 or band_n > gdal_layer.RasterCount:
+                self.console(
+                    "ERROR:",
+                    "Selected band {} is invalid for a raster with {} band(s).".format(
+                        band_n, gdal_layer.RasterCount
+                    )
+                )
+                self.console("__END__")
+                return
+
+            gt = list(gdal_layer.GetGeoTransform())
+            xsize = gdal_layer.RasterXSize
+            ysize = gdal_layer.RasterYSize
+            band = gdal_layer.GetRasterBand(band_n)
+            if band is None:
+                self.console("ERROR: Unable to access raster band {}.".format(band_n))
+                self.console("__END__")
+                return
+
+            raster_srs = osr.SpatialReference()
+            proj_wkt = gdal_layer.GetProjection()
+            vector_srs = osr.SpatialReference()
+            vector_crs_wkt = vlayer.crs().toWkt()
+            if not vector_crs_wkt or not vector_crs_wkt.strip():
+                self.console("ERROR: AOI layer has no valid CRS definition.")
+                self.console("__END__")
+                return
+
+            try:
+                vector_srs.ImportFromWkt(vector_crs_wkt)
+            except RuntimeError:
+                self.console("ERROR: AOI CRS WKT is invalid.")
+                self.console("__END__")
+                return
+
+            has_raster_crs = False
+            if proj_wkt and proj_wkt.strip():
+                try:
+                    raster_srs.ImportFromWkt(proj_wkt)
+                    has_raster_crs = True
+                except RuntimeError:
+                    self.console('WARNING: Raster CRS WKT is invalid, treating as no CRS')
+
+            # OJO!!!!
+            # https://gdal.org/tutorials/osr_api_tut.html#crs-and-axis-order        
+            if int(osgeo.__version__[0]) >= 3:
+                # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
+                if has_raster_crs:
+                    raster_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+                vector_srs.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+
+            if not has_raster_crs:
+                coord_transform = None
+                self.console('WARNING: Raster with no CRS')
+                gt[5] = -1*gt[5]
+            else:
+                try:
+                    coord_transform = osr.CoordinateTransformation(vector_srs, raster_srs)
+                except RuntimeError:
+                    self.console(
+                        "ERROR:",
+                        "Unable to create coordinate transform {} -> {}.".format(
+                            vector_srs.GetName() or "<none>",
+                            raster_srs.GetName() or "<none>"
+                        )
+                    )
+                    self.console("__END__")
+                    return
+
+            self.console("AOI CRS:", vector_srs.GetName() or "<none>")
+            self.console("Raster CRS:", raster_srs.GetName() or "<none>")
+            if coord_transform is None:
+                self.console("Coordinate transform:", "<not used; raster has no CRS>")
+            else:
+                self.console("Coordinate transform:", coord_transform)
+                self.console(
+                    "Reprojection:",
+                    "{} -> {}".format(
+                        vector_srs.GetName() or "<none>",
+                        raster_srs.GetName() or "<none>"
+                    )
+                )
+
+            memlayer_drv = ogr.GetDriverByName('Memory')
+            memlayer_ds = memlayer_drv.CreateDataSource('')
+            memlayer = memlayer_ds.CreateLayer('aoi', raster_srs, geom_type=ogr.wkbPolygon)
+            memlayer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
+            featureDefn = memlayer.GetLayerDefn()
+
+            for qgs_feature in vlayer.getFeatures():
+                featureDefn = memlayer.GetLayerDefn()
+                memfeat = ogr.Feature(featureDefn)
+                geom = qgs_feature.geometry()
+                self.console("Original polygon WKT:", geom.asWkt())
+                geom = geom.asWkb()
+                geom = ogr.CreateGeometryFromWkb(geom)
+                if geom is None:
+                    self.console("ERROR: Unable to convert AOI geometry to OGR geometry.")
+                    self.console("__END__")
+                    return
+                if not coord_transform is None:
+                    transform_result = geom.Transform(coord_transform)
+                    if transform_result != 0:
+                        self.console(
+                            "ERROR:",
+                            "Failed to reproject AOI geometry from {} to {}.".format(
+                                vector_srs.GetName() or "<none>",
+                                raster_srs.GetName() or "<none>"
+                            )
+                        )
+                        self.console("__END__")
+                        return
+                    if geom.IsEmpty():
+                        self.console("ERROR: Reprojected AOI geometry is empty.")
+                        self.console("__END__")
+                        return
+                    self.console("Reprojected polygon WKT:", geom.ExportToWkt())
+                else:
+                    self.console("Reprojected polygon WKT:", "<not reprojected>")
+
+                memfeat.SetGeometry(geom)
+                memlayer.CreateFeature(memfeat)
+
+            # Get extent in raster coords
+            e = np.array(memlayer.GetExtent()).copy()
+            e = np.reshape(e, [2, 2])
+            e = np.array(np.meshgrid(e[0], e[1]))
+            E = e.T.reshape(-1, 2)
+            m = np.reshape(np.array(gt).copy(), [2, 3])
+            A = m[:, 0]
+            m = m[:, 1:]
+            try:
+                M = np.linalg.inv(m)
+            except np.linalg.LinAlgError:
+                self.console("ERROR: Raster geotransform is not invertible.")
+                self.console("__END__")
+                return
+            col_list, row_list = np.matmul(M, (E-A).T)
+            pxoffset = 5
+            col_min = int(np.max([np.floor(np.min(col_list)) - pxoffset, 1]))
+            col_max = int(np.min([np.ceil(np.max(col_list))+pxoffset, xsize-1]))
+            row_min = int(np.max([np.floor(np.min(row_list)) - pxoffset, 1]))
+            row_max = int(np.min([np.ceil(np.max(row_list))+pxoffset, ysize-1]))
+            sub_gt = gt
+            sub_gt[0] = gt[0] + gt[1]*col_min + gt[2]*row_min
+            sub_gt[3] = gt[3] + gt[4]*col_min + gt[5]*row_min
+            sub_xsize = int(col_max-col_min)
+            sub_ysize = int(row_max-row_min)
+
+            if sub_xsize <= 0 or sub_ysize <= 0:
+                self.console(
+                    "ERROR:",
+                    "Computed raster subset is invalid: {} x {}.".format(sub_xsize, sub_ysize)
+                )
+                self.console("__END__")
+                return
+
+            memraster_drv = gdal.GetDriverByName('MEM')
+            memraster = memraster_drv.Create('', sub_xsize, sub_ysize, 1, band.DataType)
+            if memraster is None:
+                self.console("ERROR: Unable to allocate in-memory raster subset.")
+                self.console("__END__")
+                return
+
+            memraster.SetProjection(gdal_layer.GetProjection())
+            memraster.SetGeoTransform(sub_gt)
+            memband = memraster.GetRasterBand(1)
+            if memband is None:
+                self.console("ERROR: Unable to access output memory raster band.")
+                self.console("__END__")
+                return
+            memband.WriteArray(np.zeros([sub_ysize, sub_xsize]))
+            gdal.RasterizeLayer(memraster, [1], memlayer, burn_values=[1])
+            mask = memband.ReadAsArray(0, 0, sub_xsize, sub_ysize)
+            if mask is None:
+                self.console("ERROR: Unable to read rasterized AOI mask.")
+                self.console("__END__")
+                return
+            source_subset = band.ReadAsArray(col_min, row_min, sub_xsize, sub_ysize)
+            if source_subset is None:
+                self.console("ERROR: Unable to read source raster subset.")
+                self.console("__END__")
+                return
+            memband.WriteArray(mask*source_subset)
+            mask = None
+            source_subset = None
+
+            try:
+                mtf = Mtf(memraster, logfunc=self.console)
+            except Exception:            
+                self.console(traceback.format_exc())
+                self.console("*** Unable to estimate ***")
+                self.console("Try a different polygon")
+                self.console("__END__")
+            else:
+                self.console("__END__")
+        except Exception:
+            self.console(traceback.format_exc())
+            self.console("ERROR: Unexpected failure before MTF estimation.")
+            self.console("__END__")
+        finally:
+            self.dlg.runButton.setEnabled(True)
 
     def set_band(self):
         self.dlg.mRasterBandComboBox.setLayer(self.dlg.mMapRasterLayerComboBox.currentLayer())
